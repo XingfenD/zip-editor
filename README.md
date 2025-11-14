@@ -1,21 +1,21 @@
-# zip_analyzer
+# zip_editor
 
 ## Introduction
 
-A tool to analyze ZIP files. The tool can parse the ZIP file in standard mode or stream mode, and print the LFHs, CDHs and EOCDR.
+A tool to edit ZIP files. The tool can parse the ZIP file in standard mode or stream mode, and print the LFHs, CDHs and EOCDR.
 
 ## Compilation
 
 ```bash
-git clone https://github.com/XingfenD/zip-diff.git
-cd zip-diff/zip_analyzer
+git clone https://github.com/XingfenD/zip-editor.git
+cd zip-editor
 make
 ```
 
 ## Usage
 
 ```bash
-./zip_analyzer.out -f <zip_file> [-m <mode>]
+./zip_editor.out -f <zip_file> [-m <mode>]
 ```
 
 - `-f, --file <zip_file>`: Specify the ZIP file to analyze.

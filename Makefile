@@ -1,4 +1,4 @@
-# ZIP Analyzer Makefile
+# ZIP Editor Makefile
 
 # 编译器设置
 CXX = g++
@@ -6,7 +6,7 @@ CXXFLAGS = -std=c++17 -Wall -Wextra -I./utils -I./zip_seg -I./main -MMD -MP
 LDFLAGS =
 
 # 目标文件
-TARGET = zip_analyzer.out
+TARGET = zip_editor.out
 
 SRCS = main.cpp $(wildcard utils/*.cpp) $(wildcard zip_seg/*.cpp) $(wildcard main/*.cpp)
 
