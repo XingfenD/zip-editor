@@ -263,4 +263,3 @@ std::streampos EndOfCentralDirectoryRecord::findFromEnd(std::ifstream& file) {
     file.seekg(original_pos, std::ios::beg);
     return -1; // 返回无效位置
 }
-

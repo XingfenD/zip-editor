@@ -15,15 +15,29 @@ make
 ## Usage
 
 ```bash
-./zip_editor.out -f <zip_file> [-m <mode>]
+./zip_editor.out -f <zip_file> [-m <mode>] [-e]
 ```
 
 - `-f, --file <zip_file>`: Specify the ZIP file to analyze.
 - `-m, --mode <mode>`: Specify the parsing mode. Valid values are "standard" (default) and "stream".
+- `-e, --edit`: Edit the ZIP file in interactive mode. (Not implemented yet)
 - `-h, --help`: Print help information.
+
+## TODOs
+
+- [ ] Add support for editing(hack) ZIP files.
+
 
 ## Other Infomation
 
-Detailed information about parsing mode can be found in `notes` folder.
+Detailed information about parsing mode can be found in [my study notes](https://github.com/XingfenD/zip-diff-notes.git).
 
 Some demo ZIP files are provided in `zip_demos` folder.
+
+### Third-Party Libraries
+
+- cxxopts.hpp: A command line option parsing library licensed under the MIT License.
+  - Author: Jarryd Beck
+  - License: MIT License
+  - Version: 3.3.1
+  - Repository: https://github.com/jarro2783/cxxopts.git
