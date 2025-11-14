@@ -1,0 +1,266 @@
+#include "zip_seg.hpp"
+#include "utils.hpp"
+#include "defs.hpp"
+#include <iostream>
+#include <stdexcept>
+
+
+
+
+void LocalFileHeader::print() const {
+    std::cout << "Local File Header Information:" << std::endl;
+    std::cout << "  Signature: 0x" << std::hex << signature << std::dec << std::endl;
+    std::cout << "  Version Needed: " << version_needed << std::endl;
+    std::cout << "  General Bit Flag: 0x" << std::hex << general_bit_flag << std::dec << std::endl;
+    std::cout << "  Compression Method: " << compression_method << std::endl;
+    std::cout << "  Last Mod Time: 0x" << std::hex << last_mod_time << std::dec << std::endl;
+    std::cout << "  Last Mod Date: 0x" << std::hex << last_mod_date << std::dec << std::endl;
+    std::cout << "  CRC32: 0x" << std::hex << crc32 << std::dec << std::endl;
+    std::cout << "  Compressed Size: " << compressed_size << " bytes" << std::endl;
+    std::cout << "  Uncompressed Size: " << uncompressed_size << " bytes" << std::endl;
+    std::cout << "  Filename Length: " << filename_length << " bytes" << std::endl;
+    std::cout << "  Extra Field Length: " << extra_field_length << " bytes" << std::endl;
+
+    if (filename_length > 0) {
+        std::cout << "  Filename: " << filename << std::endl;
+    }
+}
+
+bool LocalFileHeader::readFromFile(std::ifstream& file) {
+    if (!file.is_open() || !file.good()) {
+        return false;
+    }
+
+    /* read signature */
+    signature = readLittleEndian<uint32_t>(file);
+
+    /* check signature */
+    if (signature != LOCAL_FILE_HEADER_SIG) {
+        return false;
+    }
+
+    version_needed = readLittleEndian<uint16_t>(file);
+    general_bit_flag = readLittleEndian<uint16_t>(file);
+    compression_method = readLittleEndian<uint16_t>(file);
+    last_mod_time = readLittleEndian<uint16_t>(file);
+    last_mod_date = readLittleEndian<uint16_t>(file);
+    crc32 = readLittleEndian<uint32_t>(file);
+    compressed_size = readLittleEndian<uint32_t>(file);
+    uncompressed_size = readLittleEndian<uint32_t>(file);
+    filename_length = readLittleEndian<uint16_t>(file);
+    extra_field_length = readLittleEndian<uint16_t>(file);
+
+    /* read filename */
+    if (filename_length > 0) {
+        filename = std::string(filename_length, '\0');
+        file.read(&filename[0], filename_length);
+    }
+
+    /* read extra field */
+    if (extra_field_length > 0) {
+        extra_field = std::make_unique<uint8_t[]>(extra_field_length);
+        file.read(reinterpret_cast<char*>(extra_field.get()), extra_field_length);
+    }
+
+    /* read file data */
+    if (compressed_size > 0) {
+        file_data = std::make_unique<uint8_t[]>(compressed_size);
+        file.read(reinterpret_cast<char*>(file_data.get()), compressed_size);
+    }
+
+    return !file.fail();
+}
+
+void CentralDirectoryHeader::print() const {
+    std::cout << "Central Directory Header Information:" << std::endl;
+    std::cout << "  Signature: 0x" << std::hex << signature << std::dec << std::endl;
+    std::cout << "  Version Made By: " << version_made_by << std::endl;
+    std::cout << "  Version Needed: " << version_needed << std::endl;
+    std::cout << "  General Bit Flag: 0x" << std::hex << general_bit_flag << std::dec << std::endl;
+    std::cout << "  Compression Method: " << compression_method << std::endl;
+    std::cout << "  Last Mod Time: 0x" << std::hex << last_mod_time << std::dec << std::endl;
+    std::cout << "  Last Mod Date: 0x" << std::hex << last_mod_date << std::dec << std::endl;
+    std::cout << "  CRC32: 0x" << std::hex << crc32 << std::dec << std::endl;
+    std::cout << "  Compressed Size: " << compressed_size << " bytes" << std::endl;
+    std::cout << "  Uncompressed Size: " << uncompressed_size << " bytes" << std::endl;
+    std::cout << "  Filename Length: " << filename_length << " bytes" << std::endl;
+    std::cout << "  Extra Field Length: " << extra_field_length << " bytes" << std::endl;
+    std::cout << "  File Comment Length: " << file_comment_length << " bytes" << std::endl;
+    std::cout << "  Disk Number Start: " << disk_number_start << std::endl;
+    std::cout << "  Internal Attr: 0x" << std::hex << internal_attr << std::dec << std::endl;
+    std::cout << "  External Attr: 0x" << std::hex << external_attr << std::dec << std::endl;
+    std::cout << "  Local Header Offset: 0x" << std::hex << local_header_offset << std::dec << std::endl;
+
+    if (filename_length > 0) {
+        std::cout << "  Filename: " << filename << std::endl;
+    }
+}
+
+bool CentralDirectoryHeader::readFromFile(std::ifstream& file) {
+    if (!file.is_open() || !file.good()) {
+        return false;
+    }
+
+    /* read signature */
+    signature = readLittleEndian<uint32_t>(file);
+
+    /* check signature */
+    if (signature != CENTRAL_DIRECTORY_HEADER_SIG) {
+        return false;
+    }
+
+    version_made_by = readLittleEndian<uint16_t>(file);
+    version_needed = readLittleEndian<uint16_t>(file);
+    general_bit_flag = readLittleEndian<uint16_t>(file);
+    compression_method = readLittleEndian<uint16_t>(file);
+    last_mod_time = readLittleEndian<uint16_t>(file);
+    last_mod_date = readLittleEndian<uint16_t>(file);
+    crc32 = readLittleEndian<uint32_t>(file);
+    compressed_size = readLittleEndian<uint32_t>(file);
+    uncompressed_size = readLittleEndian<uint32_t>(file);
+    filename_length = readLittleEndian<uint16_t>(file);
+    extra_field_length = readLittleEndian<uint16_t>(file);
+    file_comment_length = readLittleEndian<uint16_t>(file);
+    disk_number_start = readLittleEndian<uint16_t>(file);
+    internal_attr = readLittleEndian<uint16_t>(file);
+    external_attr = readLittleEndian<uint32_t>(file);
+    local_header_offset = readLittleEndian<uint32_t>(file);
+
+    /* read filename */
+    if (filename_length > 0) {
+        filename = std::string(filename_length, '\0');
+        file.read(&filename[0], filename_length);
+    }
+
+    /* read extra field */
+    if (extra_field_length > 0) {
+        extra_field = std::make_unique<uint8_t[]>(extra_field_length);
+        file.read(reinterpret_cast<char*>(extra_field.get()), extra_field_length);
+    }
+
+    return !file.fail();
+}
+
+void EndOfCentralDirectoryRecord::print() const {
+    std::cout << "End of Central Directory Record Information:" << std::endl;
+    std::cout << "  Signature: 0x" << std::hex << signature << std::dec << std::endl;
+    std::cout << "  Disk Number: " << disk_number << std::endl;
+    std::cout << "  Disk with Central Directory Start: " << disk_with_central_dir_start << std::endl;
+    std::cout << "  Central Directory Record Count: " << central_dir_record_count << std::endl;
+    std::cout << "  Total Central Directory Record Count: " << total_central_dir_record_count << std::endl;
+    std::cout << "  Central Directory Size: " << central_dir_size << " bytes" << std::endl;
+    std::cout << "  Central Directory Offset: 0x" << std::hex << central_dir_offset << std::dec << std::endl;
+    std::cout << "  ZIP File Comment Length: " << zip_file_comment_length << " bytes" << std::endl;
+
+    if (zip_file_comment_length > 0) {
+        std::cout << "  ZIP File Comment: " << zip_file_comment << std::endl;
+    }
+}
+
+bool EndOfCentralDirectoryRecord::readFromFile(std::ifstream& file) {
+    if (!file.is_open() || !file.good()) {
+        return false;
+    }
+
+    /* read signature */
+    signature = readLittleEndian<uint32_t>(file);
+
+    /* check signature */
+    if (signature != END_OF_CENTRAL_DIRECTORY_SIG) {
+        return false;
+    }
+
+    disk_number = readLittleEndian<uint16_t>(file);
+    disk_with_central_dir_start = readLittleEndian<uint16_t>(file);
+    central_dir_record_count = readLittleEndian<uint16_t>(file);
+    total_central_dir_record_count = readLittleEndian<uint16_t>(file);
+    central_dir_size = readLittleEndian<uint32_t>(file);
+    central_dir_offset = readLittleEndian<uint32_t>(file);
+    zip_file_comment_length = readLittleEndian<uint16_t>(file);
+
+    /* read zip file comment */
+    if (zip_file_comment_length > 0) {
+        zip_file_comment = std::string(zip_file_comment_length, '\0');
+        file.read(&zip_file_comment[0], zip_file_comment_length);
+    }
+
+    return !file.fail();
+}
+
+std::streampos EndOfCentralDirectoryRecord::findFromEnd(std::ifstream& file) {
+    if (!file.is_open() || !file.good()) {
+        return -1;
+    }
+
+    /* save current file position */
+    std::streampos original_pos = file.tellg();
+
+    /* get file size */
+    file.seekg(0, std::ios::end);
+    std::streampos file_size = file.tellg();
+
+    /* EndOfCentralDirectoryRecord minimum size is 22 bytes (excluding comment) */
+    /* Maximum comment length is 65535 bytes, so we search from the end of the file */
+    /* But we ensure we don't search beyond the first half of the file (to avoid over-searching) */
+    const size_t max_search_size = std::min(static_cast<size_t>(file_size) / 2, static_cast<size_t>(65535 + 22));
+
+    /* search for EndOfCentralDirectoryRecord signature from end of file */
+    /* Leave minimum size of EndOfCentralDirectoryRecord (22 bytes) at the end of the search area */
+    std::streampos search_start_pos = file_size - static_cast<std::streampos>(max_search_size);
+    if (search_start_pos < 0) {
+        search_start_pos = 0;
+    }
+
+    file.seekg(search_start_pos, std::ios::beg);
+
+    /* read search area content into buffer */
+    size_t buffer_size = static_cast<size_t>(file_size - search_start_pos);
+    std::vector<char> buffer(buffer_size);
+    file.read(buffer.data(), buffer_size);
+
+    if (file.fail()) {
+        /* recover file position */
+        file.seekg(original_pos, std::ios::beg);
+        return -1;
+    }
+
+    /* search for EndOfCentralDirectoryRecord signature from end of buffer */
+    const uint32_t signature = END_OF_CENTRAL_DIRECTORY_SIG;
+    const char* signature_bytes = reinterpret_cast<const char*>(&signature);
+
+    for (size_t i = buffer_size - 4; i > 0; --i) {
+        bool signature_match = true;
+        for (size_t j = 0; j < 4; ++j) {
+            if (buffer[i + j] != signature_bytes[j]) {
+                signature_match = false;
+                break;
+            }
+        }
+
+        if (signature_match) {
+            /* found signature, calculate its absolute position in the file */
+            std::streampos record_pos = search_start_pos + static_cast<std::streampos>(i);
+
+            /* move file pointer to the start of the record */
+            file.seekg(record_pos, std::ios::beg);
+
+            /* verify this is a valid record */
+            /* move file pointer to the start of the record and read signature to confirm */
+            file.seekg(record_pos, std::ios::beg);
+            uint32_t temp_signature = readLittleEndian<uint32_t>(file);
+
+            /* recover file position */
+            file.seekg(original_pos, std::ios::beg);
+
+            /* if signature is valid, return the found position */
+            if (temp_signature == END_OF_CENTRAL_DIRECTORY_SIG) {
+                return record_pos;
+            }
+        }
+    }
+
+    /* if no valid signature is found, recover file position */
+    file.seekg(original_pos, std::ios::beg);
+    return -1; // 返回无效位置
+}
+

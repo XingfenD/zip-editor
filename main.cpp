@@ -1,0 +1,42 @@
+#include "cxxopts.hpp"
+#include "zip_handler.hpp"
+#include <iostream>
+#include <string>
+#include <fstream>
+#include "main_callee.hpp"
+
+int main(int argc, char *argv[]) {
+    ParsedOptions options;
+
+    // 初始化和校验命令行选项
+    int ret = parseCommandLineOptions(argc, argv, options);
+    if (ret != 0) {
+        return ret; /* display help information or error message and exit */
+    }
+
+    std::cout << "Analyzing ZIP file: " << options.zip_file << " in " << options.mode << " mode" << std::endl;
+    std::cout << "Edit mode is " << (options.is_edit_mode ? "enabled" : "disabled") << std::endl;
+
+    /* read the file content */
+    std::ifstream file(options.zip_file, std::ios::binary);
+    if (!file.is_open() || !file.good()) {
+        std::cerr << "Error: Failed to open ZIP file for reading" << std::endl;
+        return 1;
+    }
+
+     /* parse the file content */
+    ZipHandler zip_handler(file, options.mode);
+    if (!zip_handler.parse()) {
+        std::cerr << "Error: Failed to parse ZIP file" << std::endl;
+        return 1;
+    }
+
+    if (options.is_edit_mode) {
+        edit(zip_handler);
+    } else {
+        zip_handler.print(); /* print the parsed results defaultly */
+    }
+
+    file.close();
+    return 0;
+}
