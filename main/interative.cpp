@@ -60,8 +60,7 @@ std::string readInputWithHistory(std::vector<std::string> &history, int &history
                     }
                 }
             }
-            else if (c == 0x17) {  /* ctrl+w (command+backspace on macos) */
-                /* fix: properly clear entire input line */
+            else if (c == 0x15) {  /* command+backspace on macos */
                 if (!line.empty()) {
                     /* clear the entire line by moving back and overwriting with spaces */
                     std::cout << std::string(cursor_pos, '\b');  /* move to start of input */

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-调试服务器脚本
-用于接收来自DebugHelper类发送的调试数据
+Debug server script
+Used to receive debug data sent from DebugHelper class
 """
 
 import socket
@@ -10,13 +10,14 @@ import threading
 import sys
 import time
 import argparse
+import os
 from datetime import datetime
 
 
 class DebugServer:
     def __init__(self, host='0.0.0.0', port=9000, buffer_size=4096):
         """
-        初始化调试服务器
+        Initialize debug server
 
         Args:
             host (str): server listen address, default is 0.0.0.0 (all interfaces)
@@ -30,7 +31,10 @@ class DebugServer:
         self.running = False
         self.threads = []
         self.lock = threading.Lock()
-        self.client_count = 0  # 跟踪当前连接的客户端数量
+        self.client_count = 0  # current connected client count
+        self.start_time = None  # server start time
+        self.total_messages = 0  # total message count
+        self.total_clients = 0  # total connected client count
 
     def start(self):
         """start debug server"""
@@ -48,9 +52,19 @@ class DebugServer:
             self.server_socket.listen(5)
 
             self.running = True
+            self.start_time = datetime.now()
+
+            # start command thread
+            command_thread = threading.Thread(target=self.handle_commands)
+            command_thread.daemon = True
+            command_thread.start()
+
             print(f"[*] 调试服务器已启动，监听 {self.host}:{self.port}")
             print(f"[*] 等待来自DebugHelper的连接...")
-            print(f"[*] 按 Ctrl+C 停止服务器")
+            print(f"[*] 输入 'help' 查看可用命令")
+
+            # set socket timeout, avoid accept() block forever
+            self.server_socket.settimeout(1.0)  # 1 second timeout
 
             # main loop, accept new connections
             while self.running:
@@ -60,6 +74,7 @@ class DebugServer:
 
                     with self.lock:
                         self.client_count += 1
+                        self.total_clients += 1
                         print(f"\n[+] 新连接: {client_address[0]}:{client_address[1]} - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
                     # create a new thread to handle each client
@@ -122,8 +137,9 @@ class DebugServer:
                     else:
                         print(f"[{timestamp}] 来自 {client_address[0]}:{client_address[1]}:")
                     print(f"  {message}")
+                    self.total_messages += 1
 
-                # 可选：发送确认响应
+                # optional: send confirmation response to client
                 # client_socket.send(b"Message received\n")
 
         except ConnectionResetError:
@@ -142,9 +158,68 @@ class DebugServer:
                 pass
             # when client closed connection, client_count will be updated in above code
 
+    def handle_commands(self):
+        """handle server commands input"""
+        while self.running:
+            try:
+                command = sys.stdin.readline().strip().lower()
+
+                if not self.running:
+                    break
+
+                if command == 'help':
+                    self.show_help()
+                elif command == 'status':
+                    self.show_status()
+                elif command == 'clear':
+                    self.clear_screen()
+                elif command == 'exit' or command == 'quit':
+                    self.running = False
+                else:
+                    if command:
+                        print(f"[!] 未知命令: '{command}'. 输入 'help' 查看可用命令")
+            except Exception as e:
+                if self.running:
+                    print(f"[!] 命令处理错误: {e}")
+                break
+
+    def show_help(self):
+        """show help informations"""
+        help_text = """
+[*] 可用命令:
+    help    - 显示此帮助信息
+    status  - 显示服务器状态信息
+    clear   - 清空屏幕
+    exit    - 停止服务器并退出
+        """
+        print(help_text)
+
+    def show_status(self):
+        """显示服务器状态信息"""
+        with self.lock:
+            uptime = datetime.now() - self.start_time
+            uptime_str = str(uptime).split('.')[0]
+
+            status_text = f"""
+[*] 服务器状态:
+    监听地址: {self.host}:{self.port}
+    运行时间: {uptime_str}
+    当前连接: {self.client_count} 个客户端
+    总连接数: {self.total_clients} 个客户端
+    总消息数: {self.total_messages} 条消息
+            """
+            print(status_text)
+
+    def clear_screen(self):
+        """clear screen"""
+        # clear screen
+        os.system('cls' if os.name == 'nt' else 'clear')
+        print(f"[*] 调试服务器 (运行中) - 输入 'help' 查看可用命令")
+
     def stop(self):
-        """停止调试服务器"""
+        """stop debug server"""
         print("\n[*] 正在停止服务器...")
+        # set running to False to stop server loops
         self.running = False
 
         # close server socket
@@ -164,7 +239,6 @@ class DebugServer:
 
 
 def main():
-    """主函数"""
     # parse command line arguments
     parser = argparse.ArgumentParser(description='调试服务器 - 接收来自C++ DebugHelper的数据')
     parser.add_argument('-p', '--port', type=int, default=9000, help='服务器监听端口')

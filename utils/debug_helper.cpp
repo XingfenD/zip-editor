@@ -2,6 +2,9 @@
 #include <cstdarg>
 #include <cstring>
 #include <iostream>
+#include <csignal>
+#include <chrono>
+#include <thread>
 
 #ifdef _WIN32
     #include <winsock2.h>
@@ -33,6 +36,8 @@ std::mutex DebugHelper::mutex;
 
 DebugHelper::DebugHelper() : isInitialized(false), port(0), host("localhost"), sockfd(INVALID_SOCKET) {
     INIT_SOCKET();
+    /* ignore SIGPIPE signal, prevent program termination when writing to closed socket */
+    signal(SIGPIPE, SIG_IGN);
 }
 
 /* check if debug helper is ready */
@@ -110,8 +115,6 @@ bool DebugHelper::connectToServer() {
     hints.ai_socktype = SOCK_STREAM;
 
     if ((status = getaddrinfo(host.c_str(), portStr, &hints, &res)) != 0) {
-        std::cerr << "Failed to resolve host: " << host
-                  << ", error: " << gai_strerror(status) << std::endl;
         return false;
     }
 
@@ -121,6 +124,19 @@ bool DebugHelper::connectToServer() {
         if (sockfd == INVALID_SOCKET) {
             continue;
         }
+
+        /* set connection timeout to 2 seconds */
+        #ifdef _WIN32
+        DWORD timeout = 2000;
+        setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof(timeout));
+        setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
+        #else
+        struct timeval timeout;
+        timeout.tv_sec = 2;
+        timeout.tv_usec = 0;
+        setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof(timeout));
+        setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
+        #endif
 
         if (connect(sockfd, p->ai_addr, p->ai_addrlen) == 0) {
             connected = true;
@@ -134,7 +150,7 @@ bool DebugHelper::connectToServer() {
     freeaddrinfo(res);
 
     if (!connected) {
-        std::cerr << "Failed to connect to " << host << ":" << port << std::endl;
+        isInitialized = false;
         return false;
     }
 
@@ -143,50 +159,58 @@ bool DebugHelper::connectToServer() {
 
 bool DebugHelper::sendData(const std::string& data) {
     if (!isReady()) {
-        std::cerr << "DebugHelper not initialized" << std::endl;
         return false;
     }
 
     std::lock_guard<std::mutex> lock(mutex);
 
-    /* check if socket is valid, if not, try to connect */
-    if (sockfd == INVALID_SOCKET) {
-        if (!connectToServer()) {
-            return false;
+    /* set socket timeout, 2 seconds */
+    int retries = 2;
+
+    while (retries > 0) {
+        /* check if socket is valid, if not, try to connect */
+        if (sockfd == INVALID_SOCKET) {
+            if (!connectToServer()) {
+                retries--;
+                if (retries > 0) {
+                    /* sleep for 100ms */
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    continue;
+                }
+                return false;
+            }
+        }
+
+        /* try to send data */
+        size_t bytesSent = send(sockfd, data.c_str(), data.length(), 0);
+
+        /* check if send is successful */
+        if (bytesSent == data.length()) {
+            /* send successful */
+            return true;
+        } else {
+            /* send failed, may be connection broken */
+            // std::cerr << "send data failed, try to reconnect..." << std::endl;
+
+            /* close current connection */
+            CLOSE_SOCKET(sockfd);
+            sockfd = INVALID_SOCKET;
+
+            retries--;
+            if (retries > 0) {
+                /* sleep for 100ms */
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
         }
     }
 
-    /* try to send data */
-    size_t bytesSent = send(sockfd, data.c_str(), data.length(), 0);
-
-    /* if send failed, try to reconnect and send again */
-    if (bytesSent != data.length()) {
-        std::cerr << "Failed to send complete data, trying to reconnect..." << std::endl;
-
-        /* close current connection and try to reconnect */
-        CLOSE_SOCKET(sockfd);
-        sockfd = INVALID_SOCKET;
-
-        if (!connectToServer()) {
-            return false;
-        }
-
-        /* try to send data again */
-        bytesSent = send(sockfd, data.c_str(), data.length(), 0);
-
-        if (bytesSent != data.length()) {
-            std::cerr << "Failed to send complete data after reconnection. Sent: " << bytesSent
-                      << " Expected: " << data.length() << std::endl;
-            return false;
-        }
-    }
-
-    return true;
+    /* all retries failed */
+    // std::cerr << "send data failed after " << retries << " retries" << std::endl;
+    return false;
 }
 
 bool DebugHelper::sendFormattedData(const char* format, ...) {
     if (!isReady()) {
-        std::cerr << "DebugHelper not initialized" << std::endl;
         return false;
     }
 

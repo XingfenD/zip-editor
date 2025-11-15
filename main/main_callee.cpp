@@ -55,11 +55,3 @@ int parseCommandLineOptions(int argc, char* argv[], ParsedOptions& options) {
 
     return 0; /* options are valid */
 }
-
-void initDebugHelper(const std::string& host, int port) {
-    if (!DebugHelper::getInstance().initialize(host, port)) {
-        std::cerr << "Failed to initialize DebugHelper!" << std::endl;
-        return;
-    }
-    std::cout << "Make sure the Python debug server is running: python3 debug_server.py" << std::endl;
-}

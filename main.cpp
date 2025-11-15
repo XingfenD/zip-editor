@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include <fstream>
+#include <csignal>
 #include "main_callee.hpp"
 #include "debug_helper.hpp"
 
@@ -16,7 +17,7 @@ int main(int argc, char *argv[]) {
     }
 
     /* initialize debug helper */
-    initDebugHelper("localhost", 9000);
+    DebugHelper::getInstance().initialize("localhost", 9000);
 
     std::cout << "Analyzing ZIP file: " << options.zip_file << " in " << options.mode << " mode" << std::endl;
     std::cout << "Edit mode is " << (options.is_edit_mode ? "enabled" : "disabled") << std::endl;
