@@ -14,7 +14,7 @@ volatile sig_atomic_t in_edit_mode = 0;
 /* Function to set terminal to raw mode for reading arrow keys */
 termios setRawMode(termios &old_tio) {
     termios new_tio = old_tio;
-    new_tio.c_lflag &= (~ICANON & ~ECHO);  // Disable canonical mode and echo
+    new_tio.c_lflag &= (~ICANON & ~ECHO);  /* disable canonical mode and echo */
     tcsetattr(STDIN_FILENO, TCSANOW, &new_tio);
     return new_tio;
 }
@@ -179,10 +179,10 @@ void displayHelp() {
 void edit(ZipHandler& zip_handler) {
     std::string command;
     bool running = true;
-    // Command history storage
+    /* Command history storage */
     std::vector<std::string> history;
-    int history_index = -1;  // -1 means not navigating history
-    std::string current_input;  // Store current input when navigating history
+    int history_index = -1;  /* -1 means not navigating history */
+    std::string current_input;  /* Store current input when navigating history */
 
     /* Set up signal handler for Ctrl+C */
     std::signal(SIGINT, signalHandler);

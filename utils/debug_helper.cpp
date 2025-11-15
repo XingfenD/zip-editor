@@ -1,3 +1,5 @@
+#ifdef REMOTE_DEBUG_ON
+
 #include "debug_helper.hpp"
 #include <cstdarg>
 #include <cstring>
@@ -30,22 +32,22 @@
     #define INVALID_SOCKET -1
 #endif
 
-/* init debug helper */
-std::unique_ptr<DebugHelper> DebugHelper::instance = nullptr;
-std::mutex DebugHelper::mutex;
+/* init remote debug client */
+std::unique_ptr<RemoteDebugClient> RemoteDebugClient::instance = nullptr;
+std::mutex RemoteDebugClient::mutex;
 
-DebugHelper::DebugHelper() : isInitialized(false), port(0), host("localhost"), sockfd(INVALID_SOCKET) {
+RemoteDebugClient::RemoteDebugClient() : isInitialized(false), port(0), host("localhost"), sockfd(INVALID_SOCKET) {
     INIT_SOCKET();
     /* ignore SIGPIPE signal, prevent program termination when writing to closed socket */
     signal(SIGPIPE, SIG_IGN);
 }
 
-/* check if debug helper is ready */
-bool DebugHelper::isReady() const {
+/* check if remote debug client is ready */
+bool RemoteDebugClient::isReady() const {
     return isInitialized;
 }
 
-DebugHelper::~DebugHelper() {
+RemoteDebugClient::~RemoteDebugClient() {
     /* close socket and cleanup socket */
     if (sockfd != INVALID_SOCKET) {
         CLOSE_SOCKET(sockfd);
@@ -55,21 +57,21 @@ DebugHelper::~DebugHelper() {
     CLEANUP_SOCKET();
 }
 
-/* get debug helper instance */
-DebugHelper& DebugHelper::getInstance() {
+/* get remote debug client instance */
+RemoteDebugClient& RemoteDebugClient::getInstance() {
     std::lock_guard<std::mutex> lock(mutex);
     if (!instance) {
-        instance.reset(new DebugHelper());
+        instance.reset(new RemoteDebugClient());
     }
     return *instance;
 }
 
-bool DebugHelper::initNetwork() {
+bool RemoteDebugClient::initNetwork() {
     return true; /* basic init, connect in sendData */
 }
 
-/* initialize debug helper */
-bool DebugHelper::initialize(const std::string& host, int port) {
+/* initialize remote debug client */
+bool RemoteDebugClient::initialize(const std::string& host, int port) {
     std::lock_guard<std::mutex> lock(mutex);
 
     if (port <= 0 || port > 65535) {
@@ -93,12 +95,12 @@ bool DebugHelper::initialize(const std::string& host, int port) {
     }
 
     isInitialized = true;
-    std::cout << "DebugHelper initialized with host: " << host << ", port: " << port << std::endl;
+    std::cout << "RemoteDebugClient initialized with host: " << host << ", port: " << port << std::endl;
     return true;
 }
 
 /* connect to server */
-bool DebugHelper::connectToServer() {
+bool RemoteDebugClient::connectToServer() {
     if (sockfd != INVALID_SOCKET) {
         CLOSE_SOCKET(sockfd);
         sockfd = INVALID_SOCKET;
@@ -157,7 +159,7 @@ bool DebugHelper::connectToServer() {
     return true;
 }
 
-bool DebugHelper::sendData(const std::string& data) {
+bool RemoteDebugClient::sendData(const std::string& data) {
     if (!isReady()) {
         return false;
     }
@@ -209,7 +211,7 @@ bool DebugHelper::sendData(const std::string& data) {
     return false;
 }
 
-bool DebugHelper::sendFormattedData(const char* format, ...) {
+bool RemoteDebugClient::sendFormattedData(const char* format, ...) {
     if (!isReady()) {
         return false;
     }
@@ -236,7 +238,7 @@ bool DebugHelper::sendFormattedData(const char* format, ...) {
     return sendData(buffer);
 }
 
-void DebugHelper::shutdown() {
+void RemoteDebugClient::shutdown() {
     /* use try-catch block to ensure lock operation won't throw exception */
     try {
         std::lock_guard<std::mutex> lock(mutex);
@@ -246,7 +248,7 @@ void DebugHelper::shutdown() {
             sockfd = INVALID_SOCKET;
         }
         isInitialized = false;
-        std::cout << "DebugHelper shutdown" << std::endl;
+        std::cout << "RemoteDebugClient shutdown" << std::endl;
     } catch (const std::exception& e) {
         /* if lock operation failed, at least set flag and close socket */
         if (sockfd != INVALID_SOCKET) {
@@ -254,6 +256,8 @@ void DebugHelper::shutdown() {
             sockfd = INVALID_SOCKET;
         }
         isInitialized = false;
-        std::cerr << "Error in DebugHelper::shutdown: " << e.what() << std::endl;
+        std::cerr << "Error in RemoteDebugClient::shutdown: " << e.what() << std::endl;
     }
 }
+
+#endif /* REMOTE_DEBUG_ON */

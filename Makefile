@@ -36,6 +36,10 @@ rebuild: clean all
 debug:
 	$(MAKE) CXXFLAGS="$(CXXFLAGS) -g -O0" all
 
+# remote debug mode with REMOTE_DEBUG_ON macro
+remote_debug: clean
+	$(MAKE) CXXFLAGS="$(CXXFLAGS) -g -O0 -DREMOTE_DEBUG_ON" all
+
 # include automatically generated dependency files
 -include $(DEPS)
 

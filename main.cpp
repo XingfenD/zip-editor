@@ -16,8 +16,8 @@ int main(int argc, char *argv[]) {
         return ret; /* display help information or error message and exit */
     }
 
-    /* initialize debug helper */
-    DebugHelper::getInstance().initialize("localhost", 9000);
+    /* initialize remote debug client */
+    RemoteDebugClient::getInstance().initialize("localhost", 9000);
 
     std::cout << "Analyzing ZIP file: " << options.zip_file << " in " << options.mode << " mode" << std::endl;
     std::cout << "Edit mode is " << (options.is_edit_mode ? "enabled" : "disabled") << std::endl;

@@ -258,5 +258,5 @@ std::streampos EndOfCentralDirectoryRecord::findFromEnd(std::ifstream& file) {
 
     /* if no valid signature is found, recover file position */
     file.seekg(original_pos, std::ios::beg);
-    return -1; // 返回无效位置
+    return -1;
 }
