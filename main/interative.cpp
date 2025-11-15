@@ -1,18 +1,162 @@
 #include "main_callee.hpp"
 #include <iostream>
 #include <csignal>
+#include <vector>
+#include <string>
+#include <termios.h>
+#include <unistd.h>
+#include <cctype>
 
-// 全局标志，表示是否处于编辑模式
+/* global flag to indicate whether the program is in edit mode */
 volatile sig_atomic_t in_edit_mode = 0;
 
-// 信号处理函数
+/* Function to set terminal to raw mode for reading arrow keys */
+termios setRawMode(termios &old_tio) {
+    termios new_tio = old_tio;
+    new_tio.c_lflag &= (~ICANON & ~ECHO);  // Disable canonical mode and echo
+    tcsetattr(STDIN_FILENO, TCSANOW, &new_tio);
+    return new_tio;
+}
+
+/* Function to restore terminal to original mode */
+void restoreTerminal(termios &old_tio) {
+    tcsetattr(STDIN_FILENO, TCSANOW, &old_tio);
+}
+
+/* Function to read input with arrow key support */
+std::string readInputWithHistory(std::vector<std::string> &history, int &history_index, std::string &current_input) {
+    termios old_tio;
+    tcgetattr(STDIN_FILENO, &old_tio);
+    setRawMode(old_tio);  // Set terminal to raw mode
+
+    std::string line;
+    int cursor_pos = 0;
+
+    try {
+        while (true) {
+            char c = getchar();
+
+            if (c == '\n') {  // Enter key
+                std::cout << std::endl;
+                // Add non-empty command to history
+                if (!line.empty() && (history.empty() || line != history.back())) {
+                    history.push_back(line);
+                }
+                history_index = -1;  // Reset history index
+                current_input.clear();
+                break;
+            }
+            else if (c == 127 || c == '\b') {  // Backspace
+                if (cursor_pos > 0) {
+                    // Move cursor back, print space to clear character, then move back again
+                    std::cout << "\b \b" << std::flush;
+                    line.erase(cursor_pos - 1, 1);
+                    cursor_pos--;
+                    // If there are characters after the cursor position, redraw them
+                    if (cursor_pos < static_cast<int>(line.length())) {
+                        std::cout << line.substr(cursor_pos) << " " << std::string(line.length() - cursor_pos, '\b') << std::flush;
+                    }
+                }
+            }
+            else if (c == 0x17) {  // Ctrl+W (Command+Backspace on MacOS)
+                // Fix: Properly clear entire input line
+                if (!line.empty()) {
+                    // Clear the entire line by moving back and overwriting with spaces
+                    std::cout << std::string(cursor_pos, '\b');  // Move to start of input
+                    std::cout << std::string(line.length(), ' ');  // Overwrite with spaces
+                    std::cout << std::string(line.length(), '\b');  // Move back to start
+
+                    // Clear the actual input string and reset cursor
+                    line.clear();
+                    cursor_pos = 0;
+                }
+            }
+            else if (c == 27) {  // ESC sequence
+                char next1 = getchar();
+                if (next1 == '[') {
+                    char next2 = getchar();
+                    if (next2 == 'A') {  // Up arrow
+                        if (!history.empty()) {
+                            // Save current input if not already navigating
+                            if (history_index == -1) {
+                                current_input = line;
+                                history_index = history.size();
+                            }
+                            if (history_index > 0) {
+                                history_index--;
+                                // Clear current line
+                                std::cout << std::string(cursor_pos, '\b') << std::string(line.length(), ' ') << std::string(line.length(), '\b');
+                                // Show historical command
+                                line = history[history_index];
+                                cursor_pos = line.length();
+                                std::cout << line << std::flush;
+                            }
+                        }
+                    }
+                    else if (next2 == 'B') {  // Down arrow
+                        if (!history.empty() && history_index < static_cast<int>(history.size()) - 1) {
+                            history_index++;
+                            // Clear current line
+                            std::cout << std::string(cursor_pos, '\b') << std::string(line.length(), ' ') << std::string(line.length(), '\b');
+                            // Show historical command
+                            line = history[history_index];
+                            cursor_pos = line.length();
+                            std::cout << line << std::flush;
+                        } else if (history_index == static_cast<int>(history.size()) - 1) {
+                            // Go back to current input
+                            history_index = -1;
+                            // Clear current line
+                            std::cout << std::string(cursor_pos, '\b') << std::string(line.length(), ' ') << std::string(line.length(), '\b');
+                            line = current_input;
+                            cursor_pos = line.length();
+                            std::cout << line << std::flush;
+                        }
+                    }
+                    else if (next2 == 'C') {  // Right arrow
+                        if (cursor_pos < static_cast<int>(line.length())) {
+                            std::cout << "\033[C" << std::flush;
+                            cursor_pos++;
+                        }
+                    }
+                    else if (next2 == 'D') {  // Left arrow
+                        if (cursor_pos > 0) {
+                            std::cout << "\033[D" << std::flush;
+                            cursor_pos--;
+                        }
+                    }
+                }
+            }
+            else if (c == 3) {  // Ctrl+C
+                line.clear();
+                cursor_pos = 0;
+                history_index = -1;
+                current_input.clear();
+                break;
+            }
+            else if (isprint(static_cast<unsigned char>(c))) {  // Regular printable character
+                line.insert(cursor_pos, 1, c);
+                cursor_pos++;
+                // Display the added character and the rest of the line
+                std::cout << c << line.substr(cursor_pos) << std::string(line.length() - cursor_pos, '\b') << std::flush;
+            }
+            // Ignore non-printable characters except those we handle
+        }
+    } catch (...) {
+        restoreTerminal(old_tio);
+        throw;
+    }
+
+    restoreTerminal(old_tio);
+    return line;
+}
+
+/* signal handler function to handle Ctrl+C */
 void signalHandler(int signal) {
     if (signal == SIGINT && in_edit_mode) {
-        // 在编辑模式下捕获Ctrl+C，只打印提示而不终止程序
-        std::cout << "\n^C - 已取消当前命令，请输入新命令" << std::endl;
-        std::cout << "> " << std::flush;
+        /* In edit mode, catch Ctrl+C and print a prompt instead of terminating */
+        std::cout << "\n> " << std::flush;
     } else {
-        // 在非编辑模式下，使用默认处理方式（终止程序）
+        // In non-edit mode, use default behavior (terminate the program)
         std::signal(signal, SIG_DFL);
         std::raise(signal);
     }
@@ -22,6 +166,7 @@ void signalHandler(int signal) {
 void displayHelp() {
     std::cout << "Available Commands:" << std::endl;
     std::cout << "  help, h          - Display this help message" << std::endl;
+    std::cout << "  clear, c         - Clear the terminal screen" << std::endl;
     std::cout << "  print, p         - Print all information about the ZIP file" << std::endl;
     std::cout << "  print local, pl  - Print local file headers information" << std::endl;
     std::cout << "  print central, pc- Print central directory headers information" << std::endl;
@@ -33,14 +178,17 @@ void displayHelp() {
 void edit(ZipHandler& zip_handler) {
     std::string command;
     bool running = true;
+    // Command history storage
+    std::vector<std::string> history;
+    int history_index = -1;  // -1 means not navigating history
+    std::string current_input;  // Store current input when navigating history
 
-    // 设置信号处理函数和编辑模式标志
+    /* Set up signal handler for Ctrl+C */
     std::signal(SIGINT, signalHandler);
     in_edit_mode = 1;
 
     std::cout << "Welcome to ZIP File Interactive Editor" << std::endl;
     std::cout << "Type 'help' for available commands, 'exit' to quit" << std::endl;
-    std::cout << "注意：按Ctrl+C只会取消当前命令，不会退出编辑模式" << std::endl;
     std::cout << "--------------------------------------------" << std::endl;
 
     // First ensure the ZIP file is parsed
@@ -51,16 +199,20 @@ void edit(ZipHandler& zip_handler) {
 
     while (running) {
         std::cout << "\n> " << std::flush;
-        std::getline(std::cin, command);
+        command = readInputWithHistory(history, history_index, current_input);
 
-        // Convert command to lowercase for case-insensitive comparison
+        /* Skip empty commands */
+        if (command.empty()) {
+            continue;
+        }
+
+        /* Convert command to lowercase for case-insensitive comparison */
         for (auto& c : command) {
-            c = std::tolower(c);
+            c = std::tolower(static_cast<unsigned char>(c));
         }
 
         if (command == "exit" || command == "quit" || command == "q") {
             running = false;
-            std::cout << "Exiting editor..." << std::endl;
         } else if (command == "help" || command == "h") {
             displayHelp();
         } else if (command == "print" || command == "p") {
@@ -71,6 +223,17 @@ void edit(ZipHandler& zip_handler) {
             zip_handler.printCentralDirectoryHeaders();
         } else if (command == "print end" || command == "pe") {
             zip_handler.printEndOfCentralDirectoryRecord();
+        } else if (command == "clear" || command == "c") {
+            // Use ANSI escape sequence to clear screen
+            std::cout << "\033[2J\033[1;1H" << std::flush;
+            // Display welcome message again after clearing
+            std::cout << "Welcome to ZIP File Interactive Editor" << std::endl;
+            std::cout << "Type 'help' for available commands, 'exit' to quit" << std::endl;
+            std::cout << "Use up/down arrow keys to navigate command history" << std::endl;
+            std::cout << "--------------------------------------------" << std::endl;
+            // Reset history index when clearing screen
+            history_index = -1;
+            current_input.clear();
         } else {
             std::cout << "Unknown command: " << command << std::endl;
             std::cout << "Type 'help' for available commands" << std::endl;

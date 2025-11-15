@@ -4,9 +4,6 @@
 #include <iostream>
 #include <stdexcept>
 
-
-
-
 void LocalFileHeader::print() const {
     std::cout << "Local File Header Information:" << std::endl;
     std::cout << "  Signature: 0x" << std::hex << signature << std::dec << std::endl;
