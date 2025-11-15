@@ -1,42 +1,42 @@
 # ZIP Editor Makefile
 
-# 编译器设置
+# settings of compiler
 CXX = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra -I./utils -I./zip_seg -I./main -MMD -MP
 LDFLAGS =
 
-# 目标文件
+# target name
 TARGET = zip_editor.out
 
 SRCS = main.cpp $(wildcard utils/*.cpp) $(wildcard zip_seg/*.cpp) $(wildcard main/*.cpp)
 
 OBJS = $(SRCS:.cpp=.o)
-# 依赖文件
+# dependency files
 DEPS = $(OBJS:.o=.d)
 
-# 默认目标
+# default target
 all: $(TARGET)
 
-# 链接目标
+# link target
 $(TARGET): $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) $(LDFLAGS)
 
-# 编译规则
+# compile rules
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# 清理规则
+# clean rules
 clean:
 	rm -f $(OBJS) $(DEPS) $(TARGET)
 
-# 重新构建
+# rebuild
 rebuild: clean all
 
-# 调试模式
+# debug mode
 debug:
 	$(MAKE) CXXFLAGS="$(CXXFLAGS) -g -O0" all
 
-# 包含自动生成的依赖文件
+# include automatically generated dependency files
 -include $(DEPS)
 
 .PHONY: all clean rebuild debug

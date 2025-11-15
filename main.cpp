@@ -4,15 +4,19 @@
 #include <string>
 #include <fstream>
 #include "main_callee.hpp"
+#include "debug_helper.hpp"
 
 int main(int argc, char *argv[]) {
     ParsedOptions options;
 
-    // 初始化和校验命令行选项
+    /* initialize and validate command line options */
     int ret = parseCommandLineOptions(argc, argv, options);
     if (ret != 0) {
         return ret; /* display help information or error message and exit */
     }
+
+    /* initialize debug helper */
+    initDebugHelper("localhost", 9000);
 
     std::cout << "Analyzing ZIP file: " << options.zip_file << " in " << options.mode << " mode" << std::endl;
     std::cout << "Edit mode is " << (options.is_edit_mode ? "enabled" : "disabled") << std::endl;

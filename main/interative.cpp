@@ -6,6 +6,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <cctype>
+#include "debug_helper.hpp"
 
 /* global flag to indicate whether the program is in edit mode */
 volatile sig_atomic_t in_edit_mode = 0;
@@ -27,7 +28,7 @@ void restoreTerminal(termios &old_tio) {
 std::string readInputWithHistory(std::vector<std::string> &history, int &history_index, std::string &current_input) {
     termios old_tio;
     tcgetattr(STDIN_FILENO, &old_tio);
-    setRawMode(old_tio);  // Set terminal to raw mode
+    setRawMode(old_tio);    /* set terminal to raw mode */
 
     std::string line;
     int cursor_pos = 0;
@@ -35,90 +36,91 @@ std::string readInputWithHistory(std::vector<std::string> &history, int &history
     try {
         while (true) {
             char c = getchar();
+            DEBUG_LOG_FMT("readInputWithHistory: c = %d, cursor_pos = %d, line = %s", c, cursor_pos, line.c_str());
 
-            if (c == '\n') {  // Enter key
+            if (c == '\n') {  /* enter key */
                 std::cout << std::endl;
-                // Add non-empty command to history
+                /* add non-empty command to history */
                 if (!line.empty() && (history.empty() || line != history.back())) {
                     history.push_back(line);
                 }
-                history_index = -1;  // Reset history index
+                history_index = -1;    /* reset history index */
                 current_input.clear();
                 break;
             }
-            else if (c == 127 || c == '\b') {  // Backspace
+            else if (c == 127 || c == '\b') {  /* backspace */
                 if (cursor_pos > 0) {
-                    // Move cursor back, print space to clear character, then move back again
+                    /* move cursor back, print space to clear character, then move back again */
                     std::cout << "\b \b" << std::flush;
                     line.erase(cursor_pos - 1, 1);
                     cursor_pos--;
-                    // If there are characters after the cursor position, redraw them
+                    /* if there are characters after the cursor position, redraw them */
                     if (cursor_pos < static_cast<int>(line.length())) {
                         std::cout << line.substr(cursor_pos) << " " << std::string(line.length() - cursor_pos, '\b') << std::flush;
                     }
                 }
             }
-            else if (c == 0x17) {  // Ctrl+W (Command+Backspace on MacOS)
-                // Fix: Properly clear entire input line
+            else if (c == 0x17) {  /* ctrl+w (command+backspace on macos) */
+                /* fix: properly clear entire input line */
                 if (!line.empty()) {
-                    // Clear the entire line by moving back and overwriting with spaces
-                    std::cout << std::string(cursor_pos, '\b');  // Move to start of input
-                    std::cout << std::string(line.length(), ' ');  // Overwrite with spaces
-                    std::cout << std::string(line.length(), '\b');  // Move back to start
+                    /* clear the entire line by moving back and overwriting with spaces */
+                    std::cout << std::string(cursor_pos, '\b');  /* move to start of input */
+                    std::cout << std::string(line.length(), ' ');  /* overwrite with spaces */
+                    std::cout << std::string(line.length(), '\b');  /* move back to start */
 
-                    // Clear the actual input string and reset cursor
+                    /* clear the actual input string and reset cursor */
                     line.clear();
                     cursor_pos = 0;
                 }
             }
-            else if (c == 27) {  // ESC sequence
+            else if (c == 27) {  /* esc sequence */
                 char next1 = getchar();
                 if (next1 == '[') {
                     char next2 = getchar();
-                    if (next2 == 'A') {  // Up arrow
+                    if (next2 == 'A') {  /* up arrow */
                         if (!history.empty()) {
-                            // Save current input if not already navigating
+                            /* save current input if not already navigating */
                             if (history_index == -1) {
                                 current_input = line;
                                 history_index = history.size();
                             }
                             if (history_index > 0) {
                                 history_index--;
-                                // Clear current line
+                                /* clear current line */
                                 std::cout << std::string(cursor_pos, '\b') << std::string(line.length(), ' ') << std::string(line.length(), '\b');
-                                // Show historical command
+                                /* show historical command */
                                 line = history[history_index];
                                 cursor_pos = line.length();
                                 std::cout << line << std::flush;
                             }
                         }
                     }
-                    else if (next2 == 'B') {  // Down arrow
+                    else if (next2 == 'B') {  /* down arrow */
                         if (!history.empty() && history_index < static_cast<int>(history.size()) - 1) {
                             history_index++;
-                            // Clear current line
+                            /* clear current line */
                             std::cout << std::string(cursor_pos, '\b') << std::string(line.length(), ' ') << std::string(line.length(), '\b');
-                            // Show historical command
+                            /* show historical command */
                             line = history[history_index];
                             cursor_pos = line.length();
                             std::cout << line << std::flush;
                         } else if (history_index == static_cast<int>(history.size()) - 1) {
-                            // Go back to current input
+                            /* go back to current input */
                             history_index = -1;
-                            // Clear current line
+                            /* clear current line */
                             std::cout << std::string(cursor_pos, '\b') << std::string(line.length(), ' ') << std::string(line.length(), '\b');
                             line = current_input;
                             cursor_pos = line.length();
                             std::cout << line << std::flush;
                         }
                     }
-                    else if (next2 == 'C') {  // Right arrow
+                    else if (next2 == 'C') {  /* right arrow */
                         if (cursor_pos < static_cast<int>(line.length())) {
                             std::cout << "\033[C" << std::flush;
                             cursor_pos++;
                         }
                     }
-                    else if (next2 == 'D') {  // Left arrow
+                    else if (next2 == 'D') {  /* left arrow */
                         if (cursor_pos > 0) {
                             std::cout << "\033[D" << std::flush;
                             cursor_pos--;
@@ -126,20 +128,20 @@ std::string readInputWithHistory(std::vector<std::string> &history, int &history
                     }
                 }
             }
-            else if (c == 3) {  // Ctrl+C
+            else if (c == 3) {  /* ctrl+c */
                 line.clear();
                 cursor_pos = 0;
                 history_index = -1;
                 current_input.clear();
                 break;
             }
-            else if (isprint(static_cast<unsigned char>(c))) {  // Regular printable character
+            else if (isprint(static_cast<unsigned char>(c))) {  /* regular printable character */
                 line.insert(cursor_pos, 1, c);
                 cursor_pos++;
-                // Display the added character and the rest of the line
+                /* display the added character and the rest of the line */
                 std::cout << c << line.substr(cursor_pos) << std::string(line.length() - cursor_pos, '\b') << std::flush;
             }
-            // Ignore non-printable characters except those we handle
+            /* ignore non-printable characters except those we handle */
         }
     } catch (...) {
         restoreTerminal(old_tio);
@@ -156,7 +158,7 @@ void signalHandler(int signal) {
         /* In edit mode, catch Ctrl+C and print a prompt instead of terminating */
         std::cout << "\n> " << std::flush;
     } else {
-        // In non-edit mode, use default behavior (terminate the program)
+        /* In non-edit mode, use default behavior (terminate the program) */
         std::signal(signal, SIG_DFL);
         std::raise(signal);
     }
@@ -191,7 +193,7 @@ void edit(ZipHandler& zip_handler) {
     std::cout << "Type 'help' for available commands, 'exit' to quit" << std::endl;
     std::cout << "--------------------------------------------" << std::endl;
 
-    // First ensure the ZIP file is parsed
+    /* First ensure the ZIP file is parsed */
     if (!zip_handler.parse()) {
         std::cerr << "Error: Failed to parse ZIP file" << std::endl;
         return;
@@ -224,14 +226,14 @@ void edit(ZipHandler& zip_handler) {
         } else if (command == "print end" || command == "pe") {
             zip_handler.printEndOfCentralDirectoryRecord();
         } else if (command == "clear" || command == "c") {
-            // Use ANSI escape sequence to clear screen
+            /* Use ANSI escape sequence to clear screen */
             std::cout << "\033[2J\033[1;1H" << std::flush;
-            // Display welcome message again after clearing
+            /* Display welcome message again after clearing */
             std::cout << "Welcome to ZIP File Interactive Editor" << std::endl;
             std::cout << "Type 'help' for available commands, 'exit' to quit" << std::endl;
             std::cout << "Use up/down arrow keys to navigate command history" << std::endl;
             std::cout << "--------------------------------------------" << std::endl;
-            // Reset history index when clearing screen
+            /* Reset history index when clearing screen */
             history_index = -1;
             current_input.clear();
         } else {
