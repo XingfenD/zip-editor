@@ -111,25 +111,44 @@ void ZipHandler::printEndOfCentralDirectoryRecord() const {
 }
 
 /**
- * Saves the ZIP file to the specified output path
+ * saves the ZIP file to the specified output path
  * @param output_path Path to save the ZIP file
  * @return True if save was successful, false otherwise
  */
 bool ZipHandler::save(const std::string& output_path) {
     try {
-        /* Open output file in binary mode */
-        std::ofstream out_file(output_path, std::ios::binary);
-        if (!out_file.is_open()) {
+        /* create directory structure if it doesn't exist */
+        size_t last_slash_pos = output_path.find_last_of("/\\");
+        if (last_slash_pos != std::string::npos) {
+            std::string directory = output_path.substr(0, last_slash_pos);
+            try {
+                std::filesystem::create_directories(directory);
+                std::cout << "Created directory structure: " << directory << std::endl;
+            } catch (const std::filesystem::filesystem_error& e) {
+                std::cerr << "Warning: Could not create directory structure: " << e.what() << std::endl;
+            }
+        }
+
+        /* open output file in binary mode using the object's output_file member */
+        output_file.open(output_path, std::ios::binary);
+        if (!output_file.is_open()) {
             std::cerr << "Error: Could not open output file: " << output_path << std::endl;
             return false;
         }
 
         writeToFile();
 
+        /* close the file after writing */
+        output_file.close();
+
         std::cout << "ZIP file successfully saved to: " << output_path << std::endl;
         return true;
     } catch (const std::exception& e) {
         std::cerr << "Error while saving ZIP file: " << e.what() << std::endl;
+        /* ensure file is closed in case of exception */
+        if (output_file.is_open()) {
+            output_file.close();
+        }
         return false;
     }
 }

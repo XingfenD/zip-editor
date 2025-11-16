@@ -11,7 +11,7 @@
 /* global flag to indicate whether the program is in edit mode */
 volatile sig_atomic_t in_edit_mode = 0;
 
-/* Function to set terminal to raw mode for reading arrow keys */
+/* function to set terminal to raw mode for reading arrow keys */
 termios setRawMode(termios &old_tio) {
     termios new_tio = old_tio;
     new_tio.c_lflag &= (~ICANON & ~ECHO);  /* disable canonical mode and echo */
@@ -19,12 +19,12 @@ termios setRawMode(termios &old_tio) {
     return new_tio;
 }
 
-/* Function to restore terminal to original mode */
+/* function to restore terminal to original mode */
 void restoreTerminal(termios &old_tio) {
     tcsetattr(STDIN_FILENO, TCSANOW, &old_tio);
 }
 
-/* Function to read input with arrow key support */
+/* function to read input with arrow key support */
 std::string readInputWithHistory(std::vector<std::string> &history, int &history_index, std::string &current_input) {
     termios old_tio;
     tcgetattr(STDIN_FILENO, &old_tio);
@@ -36,7 +36,6 @@ std::string readInputWithHistory(std::vector<std::string> &history, int &history
     try {
         while (true) {
             char c = getchar();
-            DEBUG_LOG_FMT("readInputWithHistory: c = %d, cursor_pos = %d, line = %s", c, cursor_pos, line.c_str());
 
             if (c == '\n') {  /* enter key */
                 std::cout << std::endl;
@@ -180,12 +179,13 @@ void displayHelp() {
 void edit(ZipHandler& zip_handler) {
     std::string command;
     bool running = true;
-    /* Command history storage */
+
+    /* command history storage */
     std::vector<std::string> history;
     int history_index = -1;  /* -1 means not navigating history */
-    std::string current_input;  /* Store current input when navigating history */
+    std::string current_input;  /* store current input when navigating history */
 
-    /* Set up signal handler for Ctrl+C */
+    /* set up signal handler for Ctrl+C */
     std::signal(SIGINT, signalHandler);
     in_edit_mode = 1;
 
@@ -193,7 +193,7 @@ void edit(ZipHandler& zip_handler) {
     std::cout << "Type 'help' for available commands, 'exit' to quit" << std::endl;
     std::cout << "--------------------------------------------" << std::endl;
 
-    /* First ensure the ZIP file is parsed */
+    /* first ensure the ZIP file is parsed */
     if (!zip_handler.parse()) {
         std::cerr << "Error: Failed to parse ZIP file" << std::endl;
         return;
@@ -203,16 +203,19 @@ void edit(ZipHandler& zip_handler) {
         std::cout << "\n> " << std::flush;
         command = readInputWithHistory(history, history_index, current_input);
 
-        /* Skip empty commands */
+        /* skip empty commands */
         if (command.empty()) {
             continue;
         }
 
-        /* Convert command to lowercase for case-insensitive comparison */
+        /* convert command to lowercase for case-insensitive comparison */
         for (auto& c : command) {
             c = std::tolower(static_cast<unsigned char>(c));
         }
 
+        DEBUG_LOG_FMT("Command: %s, len: %d\n", command.c_str(), command.length());
+
+        /* process simple commands (without parameters) */
         if (command == "exit" || command == "quit" || command == "q") {
             running = false;
         } else if (command == "help" || command == "h") {
@@ -226,30 +229,45 @@ void edit(ZipHandler& zip_handler) {
         } else if (command == "print end" || command == "pe") {
             zip_handler.printEndOfCentralDirectoryRecord();
         } else if (command == "clear" || command == "c") {
-            /* Use ANSI escape sequence to clear screen */
+            /* use ANSI escape sequence to clear screen */
             std::cout << "\033[2J\033[1;1H" << std::flush;
-            /* Display welcome message again after clearing */
+            /* display welcome message again after clearing */
             std::cout << "Welcome to ZIP File Interactive Editor" << std::endl;
             std::cout << "Type 'help' for available commands, 'exit' to quit" << std::endl;
             std::cout << "--------------------------------------------" << std::endl;
-            /* Reset history index when clearing screen */
+            /* reset history index when clearing screen */
             history_index = -1;
             current_input.clear();
-        } else if (command.substr(0, 5) == "save ") {
-            /* Extract output path from command */
-            std::string output_path = command.substr(5);
-
-            /* Check if output path is provided */
-            if (output_path.empty()) {
-                std::cout << "Error: Output path is required for save command" << std::endl;
-                std::cout << "Usage: save <path>" << std::endl;
-            } else {
-                /* Call save method with the provided output path */
-                zip_handler.save(output_path);
-            }
         } else {
-            std::cout << "Unknown command: " << command << std::endl;
-            std::cout << "Type 'help' for available commands" << std::endl;
+            /* process commands with parameters in a unified way */
+            size_t first_space = command.find(' ');
+            std::string cmd_name = command;
+            std::string cmd_param;
+
+            /* extract command name and parameter if space exists */
+            if (first_space != std::string::npos) {
+                cmd_name = command.substr(0, first_space);
+                /* extract parameter and trim leading whitespace */
+                cmd_param = command.substr(first_space + 1);
+                size_t start_pos = cmd_param.find_first_not_of(" ");
+                if (start_pos != std::string::npos) {
+                    cmd_param = cmd_param.substr(start_pos);
+                }
+            }
+
+            /* handle commands with parameters */
+            if (cmd_name == "save") {
+                if (cmd_param.empty()) {
+                    std::cout << "Error: Output path is required for save command" << std::endl;
+                    std::cout << "Usage: save <path>" << std::endl;
+                } else {
+                    /* call save method with the provided output path */
+                    zip_handler.save(cmd_param);
+                }
+            } else {
+                std::cout << "Unknown command: " << command << std::endl;
+                std::cout << "Type 'help' for available commands" << std::endl;
+            }
         }
     }
 }
