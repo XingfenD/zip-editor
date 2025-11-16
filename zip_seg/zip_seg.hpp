@@ -23,6 +23,22 @@ public:
         crc32(0), compressed_size(0), uncompressed_size(0),
         filename_length(0), extra_field_length(0) {}
 
+    /* ++++ get methods ++++ */
+    uint32_t getSignature() const { return signature; }
+    uint16_t getVersionNeeded() const { return version_needed; }
+    uint16_t getGeneralBitFlag() const { return general_bit_flag; }
+    uint16_t getCompressionMethod() const { return compression_method; }
+    uint16_t getLastModTime() const { return last_mod_time; }
+    uint16_t getLastModDate() const { return last_mod_date; }
+    uint32_t getCrc32() const { return crc32; }
+    uint32_t getCompressedSize() const { return compressed_size; }
+    uint32_t getUncompressedSize() const { return uncompressed_size; }
+    uint16_t getFilenameLength() const { return filename_length; }
+    uint16_t getExtraFieldLength() const { return extra_field_length; }
+    std::string getFilename() const { return filename; }
+
+    /* ---- get methods ---- */
+
     void print() const override;
     bool readFromFile(std::ifstream& file) override;
     bool writeToFile(std::ofstream& file) const;
@@ -66,6 +82,25 @@ public:
         filename_length(0), extra_field_length(0), file_comment_length(0),
         disk_number_start(0), internal_attr(0), external_attr(0),
         local_header_offset(0) {}
+
+
+    /* ++++ get methods ++++ */
+    uint32_t getSignature() const { return signature; }
+    uint16_t getVersionMadeBy() const { return version_made_by; }
+    uint16_t getVersionNeeded() const { return version_needed; }
+    uint16_t getGeneralBitFlag() const { return general_bit_flag; }
+    uint16_t getCompressionMethod() const { return compression_method; }
+    uint16_t getLastModTime() const { return last_mod_time; }
+    uint16_t getLastModDate() const { return last_mod_date; }
+    uint32_t getCrc32() const { return crc32; }
+    uint32_t getCompressedSize() const { return compressed_size; }
+    uint32_t getUncompressedSize() const { return uncompressed_size; }
+    uint16_t getFilenameLength() const { return filename_length; }
+    uint16_t getExtraFieldLength() const { return extra_field_length; }
+    uint16_t getFileCommentLength() const { return file_comment_length; }
+    std::string getFilename() const { return filename; }
+    std::string getFileComment() const { return file_comment; }
+    /* ---- get methods ---- */
 
     void print() const override;
     bool readFromFile(std::ifstream& file) override;

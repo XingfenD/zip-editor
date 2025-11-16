@@ -161,6 +161,34 @@ public:
     }
 };
 
+class ListLFHCommand : public Command {
+public:
+    ListLFHCommand() : Command("list lfh") {}
+
+    bool execute(ZipHandler& zip_handler, const std::string& params) override {
+        zip_handler.listLocalFileHeaders();
+        return true;
+    }
+
+    std::string getDescription() const override {
+        return "List local file headers information";
+    }
+};
+
+class ListCDHCommand : public Command {
+public:
+    ListCDHCommand() : Command("list cdh") {}
+
+    bool execute(ZipHandler& zip_handler, const std::string& params) override {
+        zip_handler.listCentralDirectoryHeaders();
+        return true;
+    }
+
+    std::string getDescription() const override {
+        return "List central directory headers information";
+    }
+};
+
 /* specific command factory methods */
 std::shared_ptr<Command> createExitCommand() {
     return std::make_shared<ExitCommand>();
@@ -194,6 +222,14 @@ std::shared_ptr<Command> createSaveCommand() {
     return std::make_shared<SaveCommand>();
 }
 
+std::shared_ptr<Command> createListLFHCommand() {
+    return std::make_shared<ListLFHCommand>();
+}
+
+std::shared_ptr<Command> createListCDHCommand() {
+    return std::make_shared<ListCDHCommand>();
+}
+
 /* command factory implementation */
 void CommandFactory::initialize() {
     /* register all commands */
@@ -205,7 +241,8 @@ void CommandFactory::initialize() {
     registerCommand(createPrintEOCDRCommand());
     registerCommand(createClearCommand());
     registerCommand(createSaveCommand());
-    // registerCommand(createListCommand());
+    registerCommand(createListLFHCommand());
+    registerCommand(createListCDHCommand());
 
     /* register aliases */
     for (const auto& command : commands) {

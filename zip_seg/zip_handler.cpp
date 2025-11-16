@@ -1,6 +1,7 @@
 #include "zip_handler.hpp"
 #include "defs.hpp"
 #include <iostream>
+#include <algorithm>
 
 ZipHandler::ZipHandler(std::ifstream& file, std::string parse_mode) : file(std::move(file)), parse_mode(parse_mode) {}
 
@@ -109,6 +110,23 @@ void ZipHandler::printEndOfCentralDirectoryRecord() const {
         end_of_central_directory_record.print();
     }
 }
+
+void ZipHandler::listLocalFileHeaders() const {
+    size_t idx = 0;
+    for (const auto& header : local_file_headers) {
+        std::cout << "LFH[" << idx << "]\t" << header.getFilename() << std::endl;
+        ++idx;
+    }
+}
+
+void ZipHandler::listCentralDirectoryHeaders() const {
+    size_t idx = 0;
+    for (const auto& header : central_directory_headers) {
+        std::cout << "CDH[" << idx << "]\t" << header.getFilename() << std::endl;
+        ++idx;
+    }
+}
+
 
 /**
  * saves the ZIP file to the specified output path

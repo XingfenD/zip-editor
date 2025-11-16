@@ -17,6 +17,10 @@ public:
     void printLocalFileHeaders() const;
     void printCentralDirectoryHeaders() const;
     void printEndOfCentralDirectoryRecord() const;
+
+    void listLocalFileHeaders() const;
+    void listCentralDirectoryHeaders() const;
+
     bool save(const std::string& output_path);
     /* ---- commands ---- */
 
