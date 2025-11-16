@@ -12,7 +12,7 @@ class Command {
 public:
     Command(const std::string& name) : name(name) {}
     virtual ~Command() = default;
-    virtual bool execute(ZipHandler& zip_handler, const std::string& params) = 0;
+    virtual bool execute(ZipHandler& zip_handler, const std::vector<std::string>& params) = 0;
     virtual std::string getName() const { return name; }
     virtual std::vector<std::string> getAliases() const { return {}; }
     virtual std::string getDescription() const { return ""; }

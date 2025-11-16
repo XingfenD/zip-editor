@@ -18,4 +18,6 @@ inline void writeLittleEndian(std::ofstream& file, T value) {
     file.write(reinterpret_cast<const char*>(&value), sizeof(T));
 }
 
+std::vector<std::string> splitString(const std::string& str, const std::string& delimiter);
+
 #endif /* UTILS_HPP */

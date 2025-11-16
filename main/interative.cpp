@@ -8,6 +8,7 @@
 #include <cctype>
 #include "debug_helper.hpp"
 #include "cmd_handler.hpp"
+#include "utils.hpp"
 
 /* global flag to indicate whether the program is in edit mode */
 volatile sig_atomic_t in_edit_mode = 0;
@@ -235,8 +236,7 @@ void edit(ZipHandler& zip_handler) {
                 history_index = -1;
                 current_input.clear();
             }
-
-            running = cmd->execute(zip_handler, cmd_param);
+            running = cmd->execute(zip_handler, splitString(cmd_param, " "));
         } else {
             std::cout << "Unknown command: " << command << std::endl;
             std::cout << "Type 'help' for available commands" << std::endl;

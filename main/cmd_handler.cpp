@@ -11,7 +11,7 @@ class ExitCommand : public Command {
 public:
     ExitCommand() : Command("exit") {}
 
-    bool execute(ZipHandler& zip_handler, const std::string& params) override {
+    bool execute(ZipHandler& zip_handler, const std::vector<std::string>& params) override {
         DEBUG_LOG("Exit command executed\n");
         return false; /* return false to indicate program should exit */
     }
@@ -30,7 +30,7 @@ class HelpCommand : public Command {
 public:
     HelpCommand() : Command("help") {}
 
-    bool execute(ZipHandler& zip_handler, const std::string& params) override {
+    bool execute(ZipHandler& zip_handler, const std::vector<std::string>& params) override {
         std::cout << "Available Commands:" << std::endl;
         std::cout << CommandFactory::sprintHelp() << std::endl;
         return true;
@@ -50,7 +50,7 @@ class PrintCommand : public Command {
 public:
     PrintCommand() : Command("print") {}
 
-    bool execute(ZipHandler& zip_handler, const std::string& params) override {
+    bool execute(ZipHandler& zip_handler, const std::vector<std::string>& params) override {
         zip_handler.print();
         return true;
     }
@@ -69,7 +69,7 @@ class PrintLFHCommand : public Command {
 public:
     PrintLFHCommand() : Command("print lfh") {}
 
-    bool execute(ZipHandler& zip_handler, const std::string& params) override {
+    bool execute(ZipHandler& zip_handler, const std::vector<std::string>& params) override {
         zip_handler.printLocalFileHeaders();
         return true;
     }
@@ -84,7 +84,7 @@ class PrintCDHCommand : public Command {
 public:
     PrintCDHCommand() : Command("print cdh") {}
 
-    bool execute(ZipHandler& zip_handler, const std::string& params) override {
+    bool execute(ZipHandler& zip_handler, const std::vector<std::string>& params) override {
         zip_handler.printCentralDirectoryHeaders();
         return true;
     }
@@ -99,7 +99,7 @@ class PrintEOCDRCommand : public Command {
 public:
     PrintEOCDRCommand() : Command("print eocdr") {}
 
-    bool execute(ZipHandler& zip_handler, const std::string& params) override {
+    bool execute(ZipHandler& zip_handler, const std::vector<std::string>& params) override {
         zip_handler.printEndOfCentralDirectoryRecord();
         return true;
     }
@@ -114,7 +114,7 @@ class ClearCommand : public Command {
 public:
     ClearCommand() : Command("clear") {}
 
-    bool execute(ZipHandler& zip_handler, const std::string& params) override {
+    bool execute(ZipHandler& zip_handler, const std::vector<std::string>& params) override {
         /* use ANSI escape sequence to clear screen */
         std::cout << "\033[2J\033[1;1H" << std::flush;
         std::cout << "Welcome to ZIP File Interactive Editor" << std::endl;
@@ -137,12 +137,12 @@ class SaveCommand : public Command {
 public:
     SaveCommand() : Command("save") {}
 
-    bool execute(ZipHandler& zip_handler, const std::string& params) override {
+    bool execute(ZipHandler& zip_handler, const std::vector<std::string>& params) override {
         if (params.empty()) {
             std::cout << "Error: Output path is required for save command" << std::endl;
             std::cout << "Usage: save <path>" << std::endl;
         } else {
-            zip_handler.save(params);
+            zip_handler.save(params[0]);
         }
         return true;
     }
@@ -161,31 +161,37 @@ public:
     }
 };
 
-class ListLFHCommand : public Command {
+class ListCommand : public Command {
 public:
-    ListLFHCommand() : Command("list lfh") {}
+    ListCommand() : Command("list") {}
 
-    bool execute(ZipHandler& zip_handler, const std::string& params) override {
-        zip_handler.listLocalFileHeaders();
+    bool execute(ZipHandler& zip_handler, const std::vector<std::string>& params) override {
+        DEBUG_LOG_FMT("params size: %d\n", params.size());
+        for (const auto& param: params) {
+            DEBUG_LOG_FMT("param: %s", param.c_str());
+        }
+        if (params.size() == 0 || params[0] == "") {
+            zip_handler.listLocalFileHeaders();
+            zip_handler.listCentralDirectoryHeaders();
+        } else if (params.size() == 1){
+            if (params[0] == "lfh") {
+                zip_handler.listLocalFileHeaders();
+            } else if (params[0] == "cdh") {
+                zip_handler.listCentralDirectoryHeaders();
+            } else {
+                std::cout << "Error: Invalid parameter for list command" << std::endl;
+                std::cout << "Usage: list [lfh|cdh]" << std::endl;
+            }
+        }
         return true;
+    }
+
+    std::vector<std::string> getAliases() const override {
+        return {"l"};
     }
 
     std::string getDescription() const override {
         return "List local file headers information";
-    }
-};
-
-class ListCDHCommand : public Command {
-public:
-    ListCDHCommand() : Command("list cdh") {}
-
-    bool execute(ZipHandler& zip_handler, const std::string& params) override {
-        zip_handler.listCentralDirectoryHeaders();
-        return true;
-    }
-
-    std::string getDescription() const override {
-        return "List central directory headers information";
     }
 };
 
@@ -222,12 +228,8 @@ std::shared_ptr<Command> createSaveCommand() {
     return std::make_shared<SaveCommand>();
 }
 
-std::shared_ptr<Command> createListLFHCommand() {
-    return std::make_shared<ListLFHCommand>();
-}
-
-std::shared_ptr<Command> createListCDHCommand() {
-    return std::make_shared<ListCDHCommand>();
+std::shared_ptr<Command> createListCommand() {
+    return std::make_shared<ListCommand>();
 }
 
 /* command factory implementation */
@@ -241,8 +243,7 @@ void CommandFactory::initialize() {
     registerCommand(createPrintEOCDRCommand());
     registerCommand(createClearCommand());
     registerCommand(createSaveCommand());
-    registerCommand(createListLFHCommand());
-    registerCommand(createListCDHCommand());
+    registerCommand(createListCommand());
 
     /* register aliases */
     for (const auto& command : commands) {
