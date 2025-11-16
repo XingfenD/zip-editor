@@ -9,109 +9,111 @@ std::map<std::string, std::string> CommandFactory::command_aliases;
 /* exit command implementation */
 class ExitCommand : public Command {
 public:
+    ExitCommand() : Command("exit") {}
+
     bool execute(ZipHandler& zip_handler, const std::string& params) override {
         DEBUG_LOG("Exit command executed\n");
         return false; /* return false to indicate program should exit */
     }
 
-    std::string getName() const override {
-        return "exit";
+    std::vector<std::string> getAliases() const override {
+        return {"quit", "q"};
     }
 
-    std::string getHelp() const override {
-        return "exit, quit, q          - Exit the interactive editor";
+    std::string getDescription() const override {
+        return "Exit the interactive editor";
     }
 };
 
 /* help command implementation */
 class HelpCommand : public Command {
 public:
+    HelpCommand() : Command("help") {}
+
     bool execute(ZipHandler& zip_handler, const std::string& params) override {
         std::cout << "Available Commands:" << std::endl;
-        std::cout << CommandFactory::getHelp() << std::endl;
+        std::cout << CommandFactory::sprintHelp() << std::endl;
         return true;
     }
 
-    std::string getName() const override {
-        return "help";
+    std::vector<std::string> getAliases() const override {
+        return {"h"};
     }
 
-    std::string getHelp() const override {
-        return "help, h          - Display this help message";
+    std::string getDescription() const override {
+        return "Display this help message";
     }
 };
 
 /* print command implementation */
 class PrintCommand : public Command {
 public:
+    PrintCommand() : Command("print") {}
+
     bool execute(ZipHandler& zip_handler, const std::string& params) override {
         zip_handler.print();
         return true;
     }
 
-    std::string getName() const override {
-        return "print";
+    std::vector<std::string> getAliases() const override {
+        return {"p"};
     }
 
-    std::string getHelp() const override {
-        return "print, p         - Print all information about the ZIP file";
+    std::string getDescription() const override {
+        return "Print all information about the ZIP file";
     }
 };
 
 /* print local file headers command implementation */
 class PrintLFHCommand : public Command {
 public:
+    PrintLFHCommand() : Command("print lfh") {}
+
     bool execute(ZipHandler& zip_handler, const std::string& params) override {
         zip_handler.printLocalFileHeaders();
         return true;
     }
 
-    std::string getName() const override {
-        return "print lfh";
-    }
-
-    std::string getHelp() const override {
-        return "print lfh, pl  - Print local file headers information";
+    std::string getDescription() const override {
+        return "Print local file headers information";
     }
 };
 
 /* print central directory headers command implementation */
 class PrintCDHCommand : public Command {
 public:
+    PrintCDHCommand() : Command("print cdh") {}
+
     bool execute(ZipHandler& zip_handler, const std::string& params) override {
         zip_handler.printCentralDirectoryHeaders();
         return true;
     }
 
-    std::string getName() const override {
-        return "print central";
-    }
-
-    std::string getHelp() const override {
-        return "print central, pc- Print central directory headers information";
+    std::string getDescription() const override {
+        return "Print central directory headers information";
     }
 };
 
-/* print end command implementation */
-class PrintEndCommand : public Command {
+/* print end of central directory record command implementation */
+class PrintEOCDRCommand : public Command {
 public:
+    PrintEOCDRCommand() : Command("print eocdr") {}
+
     bool execute(ZipHandler& zip_handler, const std::string& params) override {
         zip_handler.printEndOfCentralDirectoryRecord();
         return true;
     }
 
-    std::string getName() const override {
-        return "print end";
-    }
-
-    std::string getHelp() const override {
-        return "print end, pe    - Print end of central directory record information";
+    std::string getDescription() const override {
+        return "Print end of central directory record information";
     }
 };
 
 /* clear command implementation */
 class ClearCommand : public Command {
 public:
+    ClearCommand() : Command("clear") {}
+
     bool execute(ZipHandler& zip_handler, const std::string& params) override {
         /* use ANSI escape sequence to clear screen */
         std::cout << "\033[2J\033[1;1H" << std::flush;
@@ -121,18 +123,20 @@ public:
         return true;
     }
 
-    std::string getName() const override {
-        return "clear";
+    std::vector<std::string> getAliases() const override {
+        return {"c"};
     }
 
-    std::string getHelp() const override {
-        return "clear, c         - Clear the terminal screen";
+    std::string getDescription() const override {
+        return "Clear the terminal screen";
     }
 };
 
 /* save command implementation */
 class SaveCommand : public Command {
 public:
+    SaveCommand() : Command("save") {}
+
     bool execute(ZipHandler& zip_handler, const std::string& params) override {
         if (params.empty()) {
             std::cout << "Error: Output path is required for save command" << std::endl;
@@ -143,12 +147,17 @@ public:
         return true;
     }
 
-    std::string getName() const override {
-        return "save";
+    std::string getDescription() const override {
+        return "Save the ZIP file to the specified path";
     }
 
-    std::string getHelp() const override {
-        return "save <path>      - Save the ZIP file to the specified path";
+    std::string buildHelp() const override {
+        std::string ret = "save <path>";
+        if (ret.length() < 15) {
+            ret.append(15 - ret.length(), ' ');
+        }
+        ret += "- " + getDescription();
+        return ret;
     }
 };
 
@@ -174,7 +183,7 @@ std::shared_ptr<Command> createPrintCDHCommand() {
 }
 
 std::shared_ptr<Command> createPrintEOCDRCommand() {
-    return std::make_shared<PrintEndCommand>();
+    return std::make_shared<PrintEOCDRCommand>();
 }
 
 std::shared_ptr<Command> createClearCommand() {
@@ -199,14 +208,11 @@ void CommandFactory::initialize() {
     // registerCommand(createListCommand());
 
     /* register aliases */
-    registerAlias("quit", "exit");
-    registerAlias("q", "exit");
-    registerAlias("h", "help");
-    registerAlias("p", "print");
-    registerAlias("pl", "print local");
-    registerAlias("pc", "print central");
-    registerAlias("pe", "print end");
-    registerAlias("c", "clear");
+    for (const auto& command : commands) {
+        for (const auto& alias : command.second->getAliases()) {
+            registerAlias(alias, command.first);
+        }
+    }
 }
 
 std::shared_ptr<Command> CommandFactory::getCommand(const std::string& name) {
@@ -233,11 +239,36 @@ std::shared_ptr<Command> CommandFactory::getCommand(const std::string& name) {
     return nullptr;
 }
 
-std::string CommandFactory::getHelp() {
+std::string CommandFactory::sprintHelp() {
     std::string help;
     for (const auto& [name, command] : commands) {
-        if (!command->getHelp().empty()) {
-            help += "  " + command->getHelp() + "\n";
+        /* if command has custom help, use it */
+        if (!command->buildHelp().empty()) {
+            help += "  " + command->buildHelp() + "\n";
+        } else {
+            /* command name left-aligned, fixed width 15 characters */
+            std::string cmd_help = "  ";
+            cmd_help += name;
+            if (name.length() < 15) {
+                cmd_help.append(15 - name.length(), ' ');
+            }
+            cmd_help += "- ";
+            cmd_help += command->getDescription();
+
+            /* add alias information if any */
+            const auto& aliases = command->getAliases();
+            if (!aliases.empty()) {
+                cmd_help += " (aliases: ";
+                for (size_t i = 0; i < aliases.size(); ++i) {
+                    cmd_help += aliases[i];
+                    if (i < aliases.size() - 1) {
+                        cmd_help += ", ";
+                    }
+                }
+                cmd_help += ")";
+            }
+
+            help += cmd_help + "\n";
         }
     }
     return help;

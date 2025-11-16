@@ -165,7 +165,7 @@ void signalHandler(int signal) {
 
 /* This function is now handled by the HelpCommand class */
 void displayHelp() {
-    std::cout << CommandFactory::getHelp() << std::endl;
+    std::cout << CommandFactory::sprintHelp() << std::endl;
 }
 
 /* edit the zip file in interactive mode */
