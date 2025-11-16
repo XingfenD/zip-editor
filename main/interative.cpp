@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <cctype>
 #include "debug_helper.hpp"
+#include "cmd_handler.hpp"
 
 /* global flag to indicate whether the program is in edit mode */
 volatile sig_atomic_t in_edit_mode = 0;
@@ -162,17 +163,9 @@ void signalHandler(int signal) {
     }
 }
 
-/* display help information for interactive mode */
+/* This function is now handled by the HelpCommand class */
 void displayHelp() {
-    std::cout << "Available Commands:" << std::endl;
-    std::cout << "  help, h          - Display this help message" << std::endl;
-    std::cout << "  clear, c         - Clear the terminal screen" << std::endl;
-    std::cout << "  print, p         - Print all information about the ZIP file" << std::endl;
-    std::cout << "  print local, pl  - Print local file headers information" << std::endl;
-    std::cout << "  print central, pc- Print central directory headers information" << std::endl;
-    std::cout << "  print end, pe    - Print end of central directory record information" << std::endl;
-    std::cout << "  save <path>      - Save the ZIP file to the specified path" << std::endl;
-    std::cout << "  exit, quit, q    - Exit the interactive editor" << std::endl;
+    std::cout << CommandFactory::getHelp() << std::endl;
 }
 
 /* edit the zip file in interactive mode */
@@ -188,6 +181,9 @@ void edit(ZipHandler& zip_handler) {
     /* set up signal handler for Ctrl+C */
     std::signal(SIGINT, signalHandler);
     in_edit_mode = 1;
+
+    /* initialize command factory */
+    CommandFactory::initialize();
 
     std::cout << "Welcome to ZIP File Interactive Editor" << std::endl;
     std::cout << "Type 'help' for available commands, 'exit' to quit" << std::endl;
@@ -209,59 +205,41 @@ void edit(ZipHandler& zip_handler) {
 
         DEBUG_LOG_FMT("Command: %s, len: %d\n", command.c_str(), command.length());
 
-        /* process simple commands (without parameters) */
-        if (command == "exit" || command == "quit" || command == "q") {
-            running = false;
-        } else if (command == "help" || command == "h") {
-            displayHelp();
-        } else if (command == "print" || command == "p") {
-            zip_handler.print();
-        } else if (command == "print local" || command == "pl") {
-            zip_handler.printLocalFileHeaders();
-        } else if (command == "print central" || command == "pc") {
-            zip_handler.printCentralDirectoryHeaders();
-        } else if (command == "print end" || command == "pe") {
-            zip_handler.printEndOfCentralDirectoryRecord();
-        } else if (command == "clear" || command == "c") {
-            /* use ANSI escape sequence to clear screen */
-            std::cout << "\033[2J\033[1;1H" << std::flush;
-            /* display welcome message again after clearing */
-            std::cout << "Welcome to ZIP File Interactive Editor" << std::endl;
-            std::cout << "Type 'help' for available commands, 'exit' to quit" << std::endl;
-            std::cout << "--------------------------------------------" << std::endl;
-            /* reset history index when clearing screen */
-            history_index = -1;
-            current_input.clear();
+        /* process command with factory pattern */
+        size_t first_space = command.find(' ');
+        std::string cmd_name = command;
+        std::string cmd_param;
+
+        /* extract command name and parameter if space exists */
+        if (first_space != std::string::npos) {
+            cmd_name = command.substr(0, first_space);
+            /* extract parameter and trim leading whitespace */
+            cmd_param = command.substr(first_space + 1);
+            size_t start_pos = cmd_param.find_first_not_of(" ");
+            if (start_pos != std::string::npos) {
+                cmd_param = cmd_param.substr(start_pos);
+            }
+        }
+
+        /* try to get command by exact match first (including multi-word commands) */
+        auto cmd = CommandFactory::getCommand(command);
+        if (cmd == nullptr) {
+            /* if not found, try with just the command name */
+            cmd = CommandFactory::getCommand(cmd_name);
+        }
+
+        if (cmd != nullptr) {
+            /* execute the command */
+            /* for clear command, we need to reset history index */
+            if (cmd->getName() == "clear" || cmd_name == "c") {
+                history_index = -1;
+                current_input.clear();
+            }
+
+            running = cmd->execute(zip_handler, cmd_param);
         } else {
-            /* process commands with parameters in a unified way */
-            size_t first_space = command.find(' ');
-            std::string cmd_name = command;
-            std::string cmd_param;
-
-            /* extract command name and parameter if space exists */
-            if (first_space != std::string::npos) {
-                cmd_name = command.substr(0, first_space);
-                /* extract parameter and trim leading whitespace */
-                cmd_param = command.substr(first_space + 1);
-                size_t start_pos = cmd_param.find_first_not_of(" ");
-                if (start_pos != std::string::npos) {
-                    cmd_param = cmd_param.substr(start_pos);
-                }
-            }
-
-            /* handle commands with parameters */
-            if (cmd_name == "save") {
-                if (cmd_param.empty()) {
-                    std::cout << "Error: Output path is required for save command" << std::endl;
-                    std::cout << "Usage: save <path>" << std::endl;
-                } else {
-                    /* call save method with the provided output path */
-                    zip_handler.save(cmd_param);
-                }
-            } else {
-                std::cout << "Unknown command: " << command << std::endl;
-                std::cout << "Type 'help' for available commands" << std::endl;
-            }
+            std::cout << "Unknown command: " << command << std::endl;
+            std::cout << "Type 'help' for available commands" << std::endl;
         }
     }
 }
