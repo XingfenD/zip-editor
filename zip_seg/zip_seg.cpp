@@ -94,6 +94,11 @@ bool LocalFileHeader::writeToFile(std::ofstream& file) const {
         if (extra_field_length > 0) {
             file.write(reinterpret_cast<const char*>(extra_field.get()), extra_field_length);
         }
+
+        /* write file data if file_data is not null */
+        if (file_data != nullptr && compressed_size > 0) {
+            file.write(reinterpret_cast<const char*>(file_data.get()), compressed_size);
+        }
     } catch (const std::exception& e) {
         std::cerr << "Error while writing LocalFileHeader to file: " << e.what() << std::endl;
         return false;
@@ -269,9 +274,9 @@ bool EndOfCentralDirectoryRecord::writeToFile(std::ofstream& file) const {
         writeLittleEndian<uint16_t>(file, disk_with_central_dir_start);
         writeLittleEndian<uint16_t>(file, central_dir_record_count);
         writeLittleEndian<uint16_t>(file, total_central_dir_record_count);
-    writeLittleEndian<uint32_t>(file, central_dir_size);
-    writeLittleEndian<uint32_t>(file, central_dir_offset);
-    writeLittleEndian<uint16_t>(file, zip_file_comment_length);
+        writeLittleEndian<uint32_t>(file, central_dir_size);
+        writeLittleEndian<uint32_t>(file, central_dir_offset);
+        writeLittleEndian<uint16_t>(file, zip_file_comment_length);
     /* write zip file comment */
     if (zip_file_comment_length > 0) {
         file.write(zip_file_comment.c_str(), zip_file_comment_length);

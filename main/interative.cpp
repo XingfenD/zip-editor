@@ -193,12 +193,6 @@ void edit(ZipHandler& zip_handler) {
     std::cout << "Type 'help' for available commands, 'exit' to quit" << std::endl;
     std::cout << "--------------------------------------------" << std::endl;
 
-    /* first ensure the ZIP file is parsed */
-    if (!zip_handler.parse()) {
-        std::cerr << "Error: Failed to parse ZIP file" << std::endl;
-        return;
-    }
-
     while (running) {
         std::cout << "\n> " << std::flush;
         command = readInputWithHistory(history, history_index, current_input);
