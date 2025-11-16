@@ -12,10 +12,16 @@ public:
     bool parse();
     uint16_t parseStream();
     bool parseStandard();
-    void print() const;
+
+    /* ++++ commands ++++ */
     void printLocalFileHeaders() const;
     void printCentralDirectoryHeaders() const;
     void printEndOfCentralDirectoryRecord() const;
+    bool save(const std::string& output_path);
+    /* ---- commands ---- */
+
+    void print() const;
+    void writeToFile();
 
 private:
     std::ifstream file;

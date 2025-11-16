@@ -172,6 +172,7 @@ void displayHelp() {
     std::cout << "  print local, pl  - Print local file headers information" << std::endl;
     std::cout << "  print central, pc- Print central directory headers information" << std::endl;
     std::cout << "  print end, pe    - Print end of central directory record information" << std::endl;
+    std::cout << "  save <path>      - Save the ZIP file to the specified path" << std::endl;
     std::cout << "  exit, quit, q    - Exit the interactive editor" << std::endl;
 }
 
@@ -234,6 +235,18 @@ void edit(ZipHandler& zip_handler) {
             /* Reset history index when clearing screen */
             history_index = -1;
             current_input.clear();
+        } else if (command.substr(0, 5) == "save ") {
+            /* Extract output path from command */
+            std::string output_path = command.substr(5);
+
+            /* Check if output path is provided */
+            if (output_path.empty()) {
+                std::cout << "Error: Output path is required for save command" << std::endl;
+                std::cout << "Usage: save <path>" << std::endl;
+            } else {
+                /* Call save method with the provided output path */
+                zip_handler.save(output_path);
+            }
         } else {
             std::cout << "Unknown command: " << command << std::endl;
             std::cout << "Type 'help' for available commands" << std::endl;

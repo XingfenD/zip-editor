@@ -25,6 +25,8 @@ public:
 
     void print() const override;
     bool readFromFile(std::ifstream& file) override;
+    bool writeToFile(std::ofstream& file) const;
+
     ~LocalFileHeader() = default;
 
     /* define move constructor and assignment operator */
@@ -68,6 +70,9 @@ public:
     void print() const override;
     bool readFromFile(std::ifstream& file) override;
     std::streampos getLocalFileHeaderOffset() const { return local_header_offset; }
+    bool writeToFile(std::ofstream& file) const;
+
+
     ~CentralDirectoryHeader() = default;
 
     /* define move constructor and assignment operator */
@@ -112,6 +117,8 @@ public:
     uint32_t getSignature() const { return signature; }
     std::streampos getCentralDirOffset() const { return central_dir_offset; }
     uint16_t getCentralDirRecordCount() const { return central_dir_record_count; }
+
+    bool writeToFile(std::ofstream& file) const;
 
     ~EndOfCentralDirectoryRecord() = default;
 

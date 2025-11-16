@@ -68,6 +68,41 @@ bool LocalFileHeader::readFromFile(std::ifstream& file) {
     return !file.fail();
 }
 
+bool LocalFileHeader::writeToFile(std::ofstream& file) const {
+    if (!file.is_open() || !file.good()) {
+        return false;
+    }
+    try {
+        writeLittleEndian<uint32_t>(file, signature);
+        writeLittleEndian<uint16_t>(file, version_needed);
+        writeLittleEndian<uint16_t>(file, general_bit_flag);
+        writeLittleEndian<uint16_t>(file, compression_method);
+        writeLittleEndian<uint16_t>(file, last_mod_time);
+        writeLittleEndian<uint16_t>(file, last_mod_date);
+        writeLittleEndian<uint32_t>(file, crc32);
+        writeLittleEndian<uint32_t>(file, compressed_size);
+        writeLittleEndian<uint32_t>(file, uncompressed_size);
+        writeLittleEndian<uint16_t>(file, filename_length);
+        writeLittleEndian<uint16_t>(file, extra_field_length);
+
+        /* write filename */
+        if (filename_length > 0) {
+            file.write(filename.c_str(), filename_length);
+        }
+
+        /* write extra field */
+        if (extra_field_length > 0) {
+            file.write(reinterpret_cast<const char*>(extra_field.get()), extra_field_length);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error while writing LocalFileHeader to file: " << e.what() << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+
 void CentralDirectoryHeader::print() const {
     std::cout << "Central Directory Header Information:" << std::endl;
     std::cout << "  Signature: 0x" << std::hex << signature << std::dec << std::endl;
@@ -138,6 +173,46 @@ bool CentralDirectoryHeader::readFromFile(std::ifstream& file) {
     return !file.fail();
 }
 
+bool CentralDirectoryHeader::writeToFile(std::ofstream& file) const {
+    if (!file.is_open() || !file.good()) {
+        return false;
+    }
+    try {
+        writeLittleEndian<uint32_t>(file, signature);
+        writeLittleEndian<uint16_t>(file, version_made_by);
+        writeLittleEndian<uint16_t>(file, version_needed);
+        writeLittleEndian<uint16_t>(file, general_bit_flag);
+        writeLittleEndian<uint16_t>(file, compression_method);
+        writeLittleEndian<uint16_t>(file, last_mod_time);
+        writeLittleEndian<uint16_t>(file, last_mod_date);
+        writeLittleEndian<uint32_t>(file, crc32);
+        writeLittleEndian<uint32_t>(file, compressed_size);
+        writeLittleEndian<uint32_t>(file, uncompressed_size);
+        writeLittleEndian<uint16_t>(file, filename_length);
+        writeLittleEndian<uint16_t>(file, extra_field_length);
+        writeLittleEndian<uint16_t>(file, file_comment_length);
+        writeLittleEndian<uint16_t>(file, disk_number_start);
+        writeLittleEndian<uint16_t>(file, internal_attr);
+        writeLittleEndian<uint32_t>(file, external_attr);
+        writeLittleEndian<uint32_t>(file, local_header_offset);
+
+        /* write filename */
+        if (filename_length > 0) {
+            file.write(filename.c_str(), filename_length);
+        }
+
+        /* write extra field */
+        if (extra_field_length > 0) {
+            file.write(reinterpret_cast<const char*>(extra_field.get()), extra_field_length);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error while writing CentralDirectoryHeader to file: " << e.what() << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
 void EndOfCentralDirectoryRecord::print() const {
     std::cout << "End of Central Directory Record Information:" << std::endl;
     std::cout << "  Signature: 0x" << std::hex << signature << std::dec << std::endl;
@@ -182,6 +257,31 @@ bool EndOfCentralDirectoryRecord::readFromFile(std::ifstream& file) {
     }
 
     return !file.fail();
+}
+
+bool EndOfCentralDirectoryRecord::writeToFile(std::ofstream& file) const {
+    if (!file.is_open() || !file.good()) {
+        return false;
+    }
+    try {
+        writeLittleEndian<uint32_t>(file, signature);
+        writeLittleEndian<uint16_t>(file, disk_number);
+        writeLittleEndian<uint16_t>(file, disk_with_central_dir_start);
+        writeLittleEndian<uint16_t>(file, central_dir_record_count);
+        writeLittleEndian<uint16_t>(file, total_central_dir_record_count);
+    writeLittleEndian<uint32_t>(file, central_dir_size);
+    writeLittleEndian<uint32_t>(file, central_dir_offset);
+    writeLittleEndian<uint16_t>(file, zip_file_comment_length);
+    /* write zip file comment */
+    if (zip_file_comment_length > 0) {
+        file.write(zip_file_comment.c_str(), zip_file_comment_length);
+    }
+    } catch (const std::exception& e) {
+        std::cerr << "Error while writing EndOfCentralDirectoryRecord to file: " << e.what() << std::endl;
+        return false;
+    }
+
+    return true;
 }
 
 std::streampos EndOfCentralDirectoryRecord::findFromEnd(std::ifstream& file) {

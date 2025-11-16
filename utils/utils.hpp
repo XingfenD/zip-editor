@@ -13,4 +13,9 @@ inline T readLittleEndian(std::ifstream& file) {
     return value;
 }
 
+template<typename T>
+inline void writeLittleEndian(std::ofstream& file, T value) {
+    file.write(reinterpret_cast<const char*>(&value), sizeof(T));
+}
+
 #endif /* UTILS_HPP */

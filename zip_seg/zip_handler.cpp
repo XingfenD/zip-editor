@@ -1,5 +1,6 @@
 #include "zip_handler.hpp"
 #include "defs.hpp"
+#include <iostream>
 
 ZipHandler::ZipHandler(std::ifstream& file, std::string parse_mode) : file(std::move(file)), parse_mode(parse_mode) {}
 
@@ -107,4 +108,38 @@ void ZipHandler::printEndOfCentralDirectoryRecord() const {
     if (end_of_central_directory_record.getSignature() == END_OF_CENTRAL_DIRECTORY_SIG) {
         end_of_central_directory_record.print();
     }
+}
+
+/**
+ * Saves the ZIP file to the specified output path
+ * @param output_path Path to save the ZIP file
+ * @return True if save was successful, false otherwise
+ */
+bool ZipHandler::save(const std::string& output_path) {
+    try {
+        /* Open output file in binary mode */
+        std::ofstream out_file(output_path, std::ios::binary);
+        if (!out_file.is_open()) {
+            std::cerr << "Error: Could not open output file: " << output_path << std::endl;
+            return false;
+        }
+
+        writeToFile();
+
+        std::cout << "ZIP file successfully saved to: " << output_path << std::endl;
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Error while saving ZIP file: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+void ZipHandler::writeToFile() {
+    for (const auto& header : local_file_headers) {
+        header.writeToFile(output_file);
+    }
+    for (const auto& header : central_directory_headers) {
+        header.writeToFile(output_file);
+    }
+    end_of_central_directory_record.writeToFile(output_file);
 }
