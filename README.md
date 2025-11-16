@@ -23,10 +23,10 @@ make
 - `-e, --edit`: Edit the ZIP file in interactive mode. (Not implemented yet)
 - `-h, --help`: Print help information.
 
-## TODOs
+## Status
 
 - [ ] Add support for editing(hack) ZIP files.
-
+  - [x] Edit entry and exit finished.
 
 ## Other Infomation
 
@@ -40,4 +40,4 @@ Some demo ZIP files are provided in `zip_demos` folder.
   - Author: Jarryd Beck
   - License: MIT License
   - Version: 3.3.1
-  - Repository: https://github.com/jarro2783/cxxopts.git
+  - Repository: [cxxopts — Lightweight C++ option parser](https://github.com/jarro2783/cxxopts)
