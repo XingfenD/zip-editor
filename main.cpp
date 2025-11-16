@@ -42,6 +42,5 @@ int main(int argc, char *argv[]) {
         zip_handler.print(); /* print the parsed results defaultly */
     }
 
-    file.close();
     return 0;
 }

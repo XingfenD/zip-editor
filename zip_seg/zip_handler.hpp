@@ -19,6 +19,7 @@ public:
 
 private:
     std::ifstream file;
+    std::ofstream output_file;
     std::string parse_mode;
     std::vector<LocalFileHeader> local_file_headers;
     std::vector<CentralDirectoryHeader> central_directory_headers;

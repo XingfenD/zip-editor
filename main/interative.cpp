@@ -230,7 +230,6 @@ void edit(ZipHandler& zip_handler) {
             /* Display welcome message again after clearing */
             std::cout << "Welcome to ZIP File Interactive Editor" << std::endl;
             std::cout << "Type 'help' for available commands, 'exit' to quit" << std::endl;
-            std::cout << "Use up/down arrow keys to navigate command history" << std::endl;
             std::cout << "--------------------------------------------" << std::endl;
             /* Reset history index when clearing screen */
             history_index = -1;
