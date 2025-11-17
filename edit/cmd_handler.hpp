@@ -81,12 +81,4 @@ public:
     static void registerAlias(const std::string& alias, const std::string& command_name);
 };
 
-/* specific command implementations */
-extern std::shared_ptr<Command> createExitCommand();
-extern std::shared_ptr<Command> createHelpCommand();
-extern std::shared_ptr<Command> createPrintCommand();
-extern std::shared_ptr<Command> createClearCommand();
-extern std::shared_ptr<Command> createSaveCommand();
-extern std::shared_ptr<Command> createListCommand();
-
 #endif /* CMD_HANDLER_HPP */
