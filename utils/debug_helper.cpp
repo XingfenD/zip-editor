@@ -70,12 +70,21 @@ bool RemoteDebugClient::initNetwork() {
     return true; /* basic init, connect in sendData */
 }
 
+bool RemoteDebugClient::initialize() {
+    return initialize("localhost", 9000);
+}
+
 /* initialize remote debug client */
 bool RemoteDebugClient::initialize(const std::string& host, int port) {
     std::lock_guard<std::mutex> lock(mutex);
 
     if (port <= 0 || port > 65535) {
         std::cerr << "Invalid port number: " << port << std::endl;
+        return false;
+    }
+
+    if (isInitialized) {
+        std::cerr << "RemoteDebugClient is already initialized" << std::endl;
         return false;
     }
 

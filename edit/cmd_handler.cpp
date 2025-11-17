@@ -297,7 +297,7 @@ public:
     ReconnectDebugCommand() : Command("reconnect_debug") {}
 
     bool execute(ZipHandler& zip_handler, const std::vector<std::string>& params) override {
-        RemoteDebugClient::getInstance().initialize("localhost", 9000);
+        RemoteDebugClient::getInstance().initialize();
         return true;
     }
 

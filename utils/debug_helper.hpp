@@ -45,6 +45,12 @@
         static RemoteDebugClient& getInstance();
 
         /**
+         * @brief initialize remote debug client with default host and port
+         * @return whether initialization is successful
+         */
+        bool initialize();
+
+        /**
          * @brief initialize remote debug client with specified host and port
          * @param host target host address
          * @param port target port number
@@ -118,6 +124,7 @@ public:
         return instance;
     }
 
+    bool initialize() { return false; }
     bool initialize(const std::string&, int) { return false; }
     bool sendData(const std::string&) { return false; }
     bool sendFormattedData(const char*, ...) { return false; }
