@@ -87,6 +87,13 @@ public:
     bool isFocused() const;
 
     /**
+     * get cursor position
+     * @param row output parameter for row position
+     * @param col output parameter for column position
+     */
+    void getCursorPosition(int& row, int& col) const;
+
+    /**
      * handle key input
      * @param key key code
      * @return true if key was handled

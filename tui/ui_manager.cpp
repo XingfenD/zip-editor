@@ -53,7 +53,7 @@ bool UIManager::initialize() {
 
 void UIManager::shutdown() {
     clearComponents();
-    
+
     if (initialized_) {
         /* try to restore terminal to normal state */
         try {
@@ -196,6 +196,8 @@ void UIManager::focusNext() {
                 [input](const std::shared_ptr<InputField>& ptr) { return ptr.get() == input; });
             if (it != input_fields_.end()) {
                 input->setFocused(false);
+                /* hide cursor when unfocusing input field */
+                setCursorVisible(false);
             } else {
                 button->setFocused(false);
             }
@@ -227,6 +229,8 @@ void UIManager::focusPrevious() {
                 [input](const std::shared_ptr<InputField>& ptr) { return ptr.get() == input; });
             if (it != input_fields_.end()) {
                 input->setFocused(false);
+                /* hide cursor when unfocusing input field */
+                setCursorVisible(false);
             } else {
                 button->setFocused(false);
             }
@@ -249,19 +253,28 @@ void UIManager::setFocusIndex(int index) {
     void* component = focus_order_[index];
 
     /* determine component type and set focus */
+    /* first check if it's an input field - only input fields should show cursor */
     for (const auto& input : input_fields_) {
         if (input.get() == component) {
+            /* for input fields, show cursor */
+            setCursorVisible(true);
             input->setFocused(true);
             return;
         }
     }
 
+    /* for all other component types (buttons), ensure cursor is hidden */
     for (const auto& button : buttons_) {
         if (button.get() == component) {
+            /* hide cursor before setting button focus */
+            setCursorVisible(false);
             button->setFocused(true);
             return;
         }
     }
+
+    /* if it's neither input field nor button, hide cursor */
+    setCursorVisible(false);
 }
 
 void UIManager::drawAll() {
@@ -283,6 +296,38 @@ void UIManager::drawAll() {
     }
 
     refreshScreen();
+
+    /* strict cursor visibility control - only show for focused input fields */
+    if (current_focus_index_ >= 0 && current_focus_index_ < static_cast<int>(focus_order_.size())) {
+        void* component = focus_order_[current_focus_index_];
+
+        /* check if focused component is an input field */
+        bool isInputField = false;
+        InputField* focusedInput = nullptr;
+
+        for (const auto& input : input_fields_) {
+            if (input.get() == component) {
+                isInputField = true;
+                focusedInput = input.get();
+                break;
+            }
+        }
+
+        /* only show cursor for input fields */
+        if (isInputField && focusedInput && focusedInput->isFocused()) {
+            setCursorVisible(true);
+            /* ensure cursor is at the correct position */
+            int row, col;
+            focusedInput->getCursorPosition(row, col);
+            move(row, col);
+        } else {
+            /* hide cursor for all other components */
+            setCursorVisible(false);
+        }
+    } else {
+        /* no focused component, hide cursor */
+        setCursorVisible(false);
+    }
 }
 
 UIResult UIManager::run() {

@@ -78,20 +78,29 @@ void InputField::setValue(const std::string& value) {
 void InputField::setFocused(bool focused) {
     if (focused && !focused_) {
         /* gain focus */
-        curs_set(1); /* show cursor */
-        /* position cursor */
+        /* position cursor - cursor visibility will be managed by UIManager */
         int display_start = 0;
         if (cursor_pos_ >= width_) {
             display_start = cursor_pos_ - width_ + 1;
         }
         int cursor_col = col_ + label_.length() + 2 + (cursor_pos_ - display_start);
         move(row_, cursor_col);
-    } else if (!focused && focused_) {
-        /* lose focus */
-        curs_set(0); /* hide cursor */
     }
     focused_ = focused;
     draw();
+}
+
+void InputField::getCursorPosition(int& row, int& col) const {
+    row = row_;
+    
+    /* calculate display parameters to determine cursor column */
+    int field_start_col = col_ + label_.length() + 2;
+    int display_start = 0;
+    if (cursor_pos_ >= width_) {
+        display_start = cursor_pos_ - width_ + 1;
+    }
+    
+    col = field_start_col + (cursor_pos_ - display_start);
 }
 
 bool InputField::isFocused() const {
