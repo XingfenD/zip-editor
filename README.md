@@ -2,7 +2,7 @@
 
 ## Introduction
 
-A tool to edit ZIP files. The tool can parse the ZIP file in standard mode or stream mode, and print the LFHs, CDHs and EOCDR.
+A tool to analyze and edit ZIP files. The tool can parse the ZIP file and provides both interactive editing mode (default) and direct printing mode. It can display and modify LFHs, CDHs and EOCDR sections of ZIP files.
 
 ## Compilation
 
@@ -15,18 +15,20 @@ make
 ## Usage
 
 ```bash
-./zip_editor.out -f <zip_file> [-m <mode>] [-e]
+./zip_editor.out -f <zip_file> [-p] [-m <mode>]
 ```
 
 - `-f, --file <zip_file>`: Specify the ZIP file to analyze.
-- `-m, --mode <mode>`: Specify the parsing mode. Valid values are "standard" (default) and "stream".
-- `-e, --edit`: Edit the ZIP file in interactive mode. (Not implemented yet)
+- `-p, --print`: Print the parsed results directly. Without this option, the tool enters interactive edit mode by default.
+- `-m, --mode <mode>`: Specify the parsing mode. Valid values are "standard" (default) and "stream". This option is only valid when using -p.
 - `-h, --help`: Print help information.
 
 ## Status
 
-- [ ] Add support for editing(hack) ZIP files.
-  - [x] Edit entry and exit finished.
+- [x] Add support for editing(hack) ZIP files.
+  - [x] Edit entry and exit functionality.
+  - [x] Interactive editing mode (default).
+  - [x] Direct printing mode (-p option).
 
 ## Other Infomation
 

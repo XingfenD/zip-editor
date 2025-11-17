@@ -11,14 +11,14 @@
 int main(int argc, char *argv[]) {
     ParsedOptions options;
 
+    /* initialize remote debug client */
+    RemoteDebugClient::getInstance().initialize();
+
     /* initialize and validate command line options */
     int ret = parseCommandLineOptions(argc, argv, options);
     if (ret != 0) {
         return ret; /* display help information or error message and exit */
     }
-
-    /* initialize remote debug client */
-    RemoteDebugClient::getInstance().initialize();
 
     std::cout << "Analyzing ZIP file: " << options.zip_file << " in " << options.mode << " mode" << std::endl;
     std::cout << "Edit mode is " << (options.is_edit_mode ? "enabled" : "disabled") << std::endl;
