@@ -342,36 +342,36 @@ public:
 
             /* process the result based on which button was pressed */
             std::cout << "\n--- TUI Interaction Results ---\n";
-            
+
             /* determine which button was pressed based on result */
             if (result == UIResult::CONFIRM) {
                 std::cout << "✓ OK button was pressed" << std::endl;
-                
+
                 /* display saved input values */
                 std::cout << "\nRetrieved input values:\n";
                 std::cout << "  Filename: " << filename << std::endl;
                 std::cout << "  Password: " << password << std::endl;
                 std::cout << "  Hex Flag: " << hexFlag << std::endl;
-                
+
                 /* example of how to use the retrieved data */
-                
+
                 std::cout << "\nData processing example:\n";
                 std::cout << "  - File will be processed: " << filename << std::endl;
                 std::cout << "  - Password protection: " << (password.empty() ? "Disabled" : "Enabled") << std::endl;
                 std::cout << "  - Hex flag value: 0x" << hexFlag << std::endl;
-                
+
             } else if (result == UIResult::CANCEL) {
                 std::cout << "✗ Cancel button was pressed" << std::endl;
                 std::cout << "Operation cancelled by user" << std::endl;
-                
+
             } else if (result == UIResult::ESC) {
                 std::cout << "⎋ Escape key was pressed" << std::endl;
                 std::cout << "Operation aborted by user" << std::endl;
-                
+
             } else {
                 std::cout << "? Unknown result: " << static_cast<int>(result) << std::endl;
             }
-            
+
             std::cout << "------------------------------\n";
 
         } catch (const std::exception& e) {
