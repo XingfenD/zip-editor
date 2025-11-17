@@ -51,14 +51,14 @@ class EnterKeyHandler : public InputHandler {
 public:
     EnterKeyHandler() : InputHandler('\n') {}
 
-    bool handle(char c, std::string& line, int& cursor_pos, std::vector<std::string>& history, int& history_index, std::string& current_input) override {
+    bool handle(InputContext& context) override {
         std::cout << std::endl;
         /* add non-empty command to history */
-        if (!line.empty() && (history.empty() || line != history.back())) {
-            history.push_back(line);
+        if (!context.line.empty() && (context.history.empty() || context.line != context.history.back())) {
+            context.history.push_back(context.line);
         }
-        history_index = -1;    /* reset history index */
-        current_input.clear();
+        context.history_index = -1;    /* reset history index */
+        context.current_input.clear();
         return false; /* return false to break the loop */
     }
 };
@@ -72,17 +72,17 @@ public:
         return c == 127 || c == '\b'; /* handle both 127 and \b */
     }
 
-    bool handle(char c, std::string& line, int& cursor_pos, std::vector<std::string>& history, int& history_index, std::string& current_input) override {
-        if (cursor_pos > 0) {
+    bool handle(InputContext& context) override {
+        if (context.cursor_pos > 0) {
             /* move cursor back one position */
             std::cout << "\b" << std::flush;
 
             /* save cursor after character */
-            std::string remaining = line.substr(cursor_pos);
+            std::string remaining = context.line.substr(context.cursor_pos);
 
             /* remove character at cursor position */
-            line.erase(cursor_pos - 1, 1);
-            cursor_pos--;
+            context.line.erase(context.cursor_pos - 1, 1);
+            context.cursor_pos--;
 
             /* redraw cursor after character (including space to clear last position) */
             std::cout << remaining << " " << std::flush;
@@ -102,15 +102,15 @@ class MacOSDeleteKeyHandler : public InputHandler {
 public:
     MacOSDeleteKeyHandler() : InputHandler(0x15) {}
 
-    bool handle(char c, std::string& line, int& cursor_pos, std::vector<std::string>& history, int& history_index, std::string& current_input) override {
-        if (!line.empty()) {
+    bool handle(InputContext& context) override {
+        if (!context.line.empty()) {
             /* clear the entire line by moving back and overwriting with spaces */
-            std::cout << std::string(cursor_pos, '\b');  /* move to start of input */
-            std::cout << std::string(line.length(), ' ');  /* overwrite with spaces */
-            std::cout << std::string(line.length(), '\b');  /* move back to start */
+            std::cout << std::string(context.cursor_pos, '\b');  /* move to start of input */
+            std::cout << std::string(context.line.length(), ' ');  /* overwrite with spaces */
+            std::cout << std::string(context.line.length(), '\b');  /* move back to start */
             /* clear the actual input string and reset cursor */
-            line.clear();
-            cursor_pos = 0;
+            context.line.clear();
+            context.cursor_pos = 0;
         }
         return true;
     }
@@ -121,57 +121,57 @@ class EscapeSequenceHandler : public InputHandler {
 public:
     EscapeSequenceHandler() : InputHandler(27) {}
 
-    bool handle(char c, std::string& line, int& cursor_pos, std::vector<std::string>& history, int& history_index, std::string& current_input) override {
+    bool handle(InputContext& context) override {
         char next1 = getchar();
         if (next1 == '[') {
             char next2 = getchar();
             if (next2 == 'A') {  /* up arrow */
-                if (!history.empty()) {
+                if (!context.history.empty()) {
                     /* save current input if not already navigating */
-                    if (history_index == -1) {
-                        current_input = line;
-                        history_index = history.size();
+                    if (context.history_index == -1) {
+                        context.current_input = context.line;
+                        context.history_index = context.history.size();
                     }
-                    if (history_index > 0) {
-                        history_index--;
+                    if (context.history_index > 0) {
+                        context.history_index--;
                         /* clear current line */
-                        std::cout << std::string(cursor_pos, '\b') << std::string(line.length(), ' ') << std::string(line.length(), '\b');
+                        std::cout << std::string(context.cursor_pos, '\b') << std::string(context.line.length(), ' ') << std::string(context.line.length(), '\b');
                         /* show historical command */
-                        line = history[history_index];
-                        cursor_pos = line.length();
-                        std::cout << line << std::flush;
+                        context.line = context.history[context.history_index];
+                        context.cursor_pos = context.line.length();
+                        std::cout << context.line << std::flush;
                     }
                 }
             }
             else if (next2 == 'B') {  /* down arrow */
-                if (!history.empty() && history_index < static_cast<int>(history.size()) - 1) {
-                    history_index++;
+                if (!context.history.empty() && context.history_index < static_cast<int>(context.history.size()) - 1) {
+                    context.history_index++;
                     /* clear current line */
-                    std::cout << std::string(cursor_pos, '\b') << std::string(line.length(), ' ') << std::string(line.length(), '\b');
+                    std::cout << std::string(context.cursor_pos, '\b') << std::string(context.line.length(), ' ') << std::string(context.line.length(), '\b');
                     /* show historical command */
-                    line = history[history_index];
-                    cursor_pos = line.length();
-                    std::cout << line << std::flush;
-                } else if (history_index == static_cast<int>(history.size()) - 1) {
+                    context.line = context.history[context.history_index];
+                    context.cursor_pos = context.line.length();
+                    std::cout << context.line << std::flush;
+                } else if (context.history_index == static_cast<int>(context.history.size()) - 1) {
                     /* go back to current input */
-                    history_index = -1;
+                    context.history_index = -1;
                     /* clear current line */
-                    std::cout << std::string(cursor_pos, '\b') << std::string(line.length(), ' ') << std::string(line.length(), '\b');
-                    line = current_input;
-                    cursor_pos = line.length();
-                    std::cout << line << std::flush;
+                    std::cout << std::string(context.cursor_pos, '\b') << std::string(context.line.length(), ' ') << std::string(context.line.length(), '\b');
+                    context.line = context.current_input;
+                    context.cursor_pos = context.line.length();
+                    std::cout << context.line << std::flush;
                 }
             }
             else if (next2 == 'C') {  /* right arrow */
-                if (cursor_pos < static_cast<int>(line.length())) {
+                if (context.cursor_pos < static_cast<int>(context.line.length())) {
                     std::cout << "\033[C" << std::flush;
-                    cursor_pos++;
+                    context.cursor_pos++;
                 }
             }
             else if (next2 == 'D') {  /* left arrow */
-                if (cursor_pos > 0) {
+                if (context.cursor_pos > 0) {
                     std::cout << "\033[D" << std::flush;
-                    cursor_pos--;
+                    context.cursor_pos--;
                 }
             }
         }
@@ -184,11 +184,11 @@ class CtrlCHandler : public InputHandler {
 public:
     CtrlCHandler() : InputHandler(3) {}
 
-    bool handle(char c, std::string& line, int& cursor_pos, std::vector<std::string>& history, int& history_index, std::string& current_input) override {
-        line.clear();
-        cursor_pos = 0;
-        history_index = -1;
-        current_input.clear();
+    bool handle(InputContext& context) override {
+        context.line.clear();
+        context.cursor_pos = 0;
+        context.history_index = -1;
+        context.current_input.clear();
         return false;
     }
 };
@@ -198,9 +198,9 @@ class TabKeyHandler : public InputHandler {
 public:
     TabKeyHandler() : InputHandler(9) {}
 
-    bool handle(char c, std::string& line, int& cursor_pos, std::vector<std::string>& history, int& history_index, std::string& current_input) override {
+    bool handle(InputContext& context) override {
         /* find the start of the current command (before cursor) */
-        size_t cmd_start = line.rfind(' ', cursor_pos - 1);
+        size_t cmd_start = context.line.rfind(' ', context.cursor_pos - 1);
         if (cmd_start == std::string::npos) {
             cmd_start = 0;
         } else {
@@ -208,18 +208,18 @@ public:
         }
 
         /* extract the command prefix */
-        std::string prefix = line.substr(cmd_start, cursor_pos - cmd_start);
+        std::string prefix = context.line.substr(cmd_start, context.cursor_pos - cmd_start);
 
         /* find matching commands */
         std::vector<std::string> matches = findMatchingCommands(prefix);
 
         if (matches.size() == 1) {  /* single match, complete it */
             std::string completion = matches[0].substr(prefix.length());
-            line.insert(cursor_pos, completion + " ");
-            cursor_pos += completion.length() + 1;
+            context.line.insert(context.cursor_pos, completion + " ");
+            context.cursor_pos += completion.length() + 1;
 
             /* redraw the line from cursor position */
-            std::cout << line.substr(cursor_pos - completion.length() - 1) << std::string(line.length() - cursor_pos, '\b') << std::flush;
+            std::cout << context.line.substr(context.cursor_pos - completion.length() - 1) << std::string(context.line.length() - context.cursor_pos, '\b') << std::flush;
         } else if (matches.size() > 1) {  /* multiple matches */
             /* find the longest common prefix */
             size_t max_len = 0;
@@ -244,18 +244,18 @@ public:
             /* if there's a common prefix beyond what we already have */
             if (max_len > prefix.length()) {
                 std::string common = matches[0].substr(prefix.length(), max_len - prefix.length());
-                line.insert(cursor_pos, common);
-                cursor_pos += common.length();
+                context.line.insert(context.cursor_pos, common);
+                context.cursor_pos += common.length();
 
                 /* redraw the common part */
-                std::cout << common << line.substr(cursor_pos) << std::string(line.length() - cursor_pos, '\b') << std::flush;
+                std::cout << common << context.line.substr(context.cursor_pos) << std::string(context.line.length() - context.cursor_pos, '\b') << std::flush;
             } else {
                 /* no common prefix, display all matches */
                 std::cout << "\n";
                 for (const auto& match : matches) {
                     std::cout << "  " << match << std::endl;
                 }
-                std::cout << "> " << line << std::flush;
+                std::cout << "> " << context.line << std::flush;
             }
         }
         return true;
@@ -271,11 +271,11 @@ public:
         return isprint(static_cast<unsigned char>(c));
     }
 
-    bool handle(char c, std::string& line, int& cursor_pos, std::vector<std::string>& history, int& history_index, std::string& current_input) override {
-        line.insert(cursor_pos, 1, c);
-        cursor_pos++;
+    bool handle(InputContext& context) override {
+        context.line.insert(context.cursor_pos, 1, context.c);
+        context.cursor_pos++;
         /* display the added character and the rest of the line */
-        std::cout << c << line.substr(cursor_pos) << std::string(line.length() - cursor_pos, '\b') << std::flush;
+        std::cout << context.c << context.line.substr(context.cursor_pos) << std::string(context.line.length() - context.cursor_pos, '\b') << std::flush;
         return true;
     }
 };

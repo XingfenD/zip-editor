@@ -6,6 +6,31 @@
 #include <map>
 #include <memory>
 
+/* input context structure to encapsulate all input-related parameters */
+struct InputContext {
+    char c;                             /* current input character */
+    std::string& line;                  /* current input line */
+    int& cursor_pos;                    /* current cursor position */
+    std::vector<std::string>& history;  /* command history */
+    int& history_index;                 /* current history index */
+    std::string& current_input;         /* current input buffer */
+
+    /* constructor to initialize all references */
+    InputContext(
+        char c_,
+        std::string& line_,
+        int& cursor_pos_,
+        std::vector<std::string>& history_,
+        int& history_index_,
+        std::string& current_input_
+    ) : c(c_),
+        line(line_),
+        cursor_pos(cursor_pos_),
+        history(history_),
+        history_index(history_index_),
+        current_input(current_input_) {}
+};
+
 /* find matching commands based on prefix for tab completion */
 std::vector<std::string> findMatchingCommands(const std::string& prefix);
 
@@ -18,14 +43,10 @@ public:
     /**
      * handle the input character
      * @param c the input character
-     * @param line the current input line
-     * @param cursor_pos the current cursor position
-     * @param history the command history
-     * @param history_index the current history index
-     * @param current_input the current input buffer
+     * @param context the input context containing all necessary state
      * @return whether the loop should continue (false to break)
      */
-    virtual bool handle(char c, std::string& line, int& cursor_pos, std::vector<std::string>& history, int& history_index, std::string& current_input) = 0;
+    virtual bool handle(InputContext& context) = 0;
 
     /**
      * check if this handler can handle the given character

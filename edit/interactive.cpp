@@ -49,8 +49,10 @@ std::string readInputWithHistory(std::vector<std::string> &history, int &history
             std::shared_ptr<InputHandler> handler = InputHandlerFactory::getHandler(c);
 
             if (handler) {
+                /* create input context */
+                InputContext context(c, line, cursor_pos, history, history_index, current_input);
                 /* use the handler to process the input */
-                bool continue_loop = handler->handle(c, line, cursor_pos, history, history_index, current_input);
+                bool continue_loop = handler->handle(context);
                 if (!continue_loop) {
                     break;  /* exit loop if handler returns false */
                 }
