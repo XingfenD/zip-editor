@@ -3,6 +3,10 @@
 #include <ctime>
 #include <unistd.h>
 #include "debug_helper.hpp"
+#include "ui_manager.hpp"
+#include "input_field.hpp"
+#include "button.hpp"
+#include "signal_manager.hpp"
 
 /* static member initialization*/
 std::map<std::string, std::shared_ptr<Command>> CommandFactory::commands;
@@ -277,6 +281,80 @@ public:
     }
 };
 
+/* test_tui command implementation */
+class TestTUICommand : public Command {
+public:
+    TestTUICommand() : Command("test_tui") {}
+
+    bool execute(ZipHandler& zip_handler, const std::vector<std::string>& params) override {
+        DEBUG_LOG("Test TUI command executed\n");
+
+        try {
+            /* create and initialize UI manager */
+            UIManager ui;
+            if (!ui.initialize()) {
+                std::cerr << "Failed to initialize UI\n";
+                return false;
+            }
+
+            /* initialize signal manager if not already initialized */
+            SignalManager::initialize();
+
+            /* register SIGINT (Ctrl+C) handler with cleanup callback using SignalGuard for RAII */
+            SignalManager::SignalGuard sigintGuard(SIGINT, [&ui](int signal) {
+                DEBUG_LOG_FMT("Signal %d received, cleaning up TUI...\n", signal);
+                /* ensure TUI is properly shut down */
+                if (ui.isInitialized()) {
+                    ui.shutdown();
+                }
+                DEBUG_LOG("TUI cleanup completed\n");
+            });
+
+            /* add header */
+            ui.addHeader("ZIP Editor Configuration");
+
+            /* add input fields */
+            InputField* nameField = ui.addInputField("Name:", 5, 10, 30, InputType::STRING, "default_name");
+            InputField* passwordField = ui.addInputField("Password:", 7, 10, 30, InputType::STRING);
+            InputField* hexField = ui.addInputField("Hex Value:", 9, 10, 30, InputType::HEX, "1A2B3C");
+
+            /* add buttons */
+            ui.addButton("OK", 11, 10, ButtonType::CONFIRM);
+            ui.addButton("Cancel", 11, 25, ButtonType::CANCEL);
+
+            /* run the UI main loop and get result */
+            UIResult result = ui.run();
+
+            /* get results after UI exits */
+            if (result == UIResult::CONFIRM) {
+                std::cout << "Configuration saved:\n";
+                std::cout << "  Name: = " << nameField->getValue() << std::endl;
+                std::cout << "  Password: = " << passwordField->getValue() << std::endl;
+                std::cout << "  Hex Value: = " << hexField->getValue() << std::endl;
+            } else {
+                std::cout << "Configuration cancelled\n";
+            }
+
+            /* ensure shutdown is called even if exception occurs */
+            ui.shutdown();
+        } catch (const std::exception& e) {
+            std::cerr << "Error running TUI: " << e.what() << std::endl;
+        } catch (...) {
+            std::cerr << "Unknown error running TUI\n";
+        }
+
+        return true;
+    }
+
+    std::vector<std::string> getAliases() const override {
+        return {"ttui"};
+    }
+
+    std::string getDescription() const override {
+        return "Test the Text User Interface components";
+    }
+};
+
 #ifdef REMOTE_DEBUG_ON
 class TestDebugCommand : public Command {
 public:
@@ -363,6 +441,10 @@ std::shared_ptr<Command> createListCommand() {
     return std::make_shared<ListCommand>();
 }
 
+std::shared_ptr<Command> createTestTUICommand() {
+    return std::make_shared<TestTUICommand>();
+}
+
 #ifdef REMOTE_DEBUG_ON
 std::shared_ptr<Command> createTestDebugCommand() {
     return std::make_shared<TestDebugCommand>();
@@ -386,6 +468,7 @@ void CommandFactory::initialize() {
     registerCommand(createClearCommand());
     registerCommand(createSaveCommand());
     registerCommand(createListCommand());
+    registerCommand(createTestTUICommand());
 #ifdef REMOTE_DEBUG_ON
     registerCommand(createTestDebugCommand());
     registerCommand(createReconnectDebugCommand());

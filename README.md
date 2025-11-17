@@ -43,3 +43,8 @@ Some demo ZIP files are provided in `zip_demos` folder.
   - License: MIT License
   - Version: 3.3.1
   - Repository: [cxxopts — Lightweight C++ option parser](https://github.com/jarro2783/cxxopts)
+- ncurses: A library for creating text-based user interfaces.
+  - Author: Zeyd Ben-Halim, Pavel Curtis, Juergen Pfeifer, Thomas E. Dickey and others
+  - License: [MIT-X11 License](https://invisible-island.net/ncurses/ncurses-license.html)
+  - Version: 5.4
+  - Official Website: [ncurses](https://www.gnu.org/software/ncurses/)
