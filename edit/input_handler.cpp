@@ -51,6 +51,11 @@ class EnterKeyHandler : public InputHandler {
 public:
     EnterKeyHandler() : InputHandler('\n') {}
 
+    bool canHandle(char c) const override {
+        /* handle both newline (\n, ASCII 10) and carriage return (\r, ASCII 13) */
+        return c == '\n' || c == '\r';
+    }
+
     bool handle(InputContext& context) override {
         std::cout << std::endl;
         /* add non-empty command to history */
@@ -291,5 +296,3 @@ void InputHandlerFactory::initialize() {
     registerHandler(std::make_shared<TabKeyHandler>());
     registerHandler(std::make_shared<PrintableCharHandler>());
 }
-
-/* all handler implementations are now inline in the class definitions above */

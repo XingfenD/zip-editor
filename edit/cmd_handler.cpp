@@ -311,38 +311,76 @@ public:
             });
 
             /* add header */
-            ui.addHeader("ZIP Editor Configuration");
+            ui.addHeader("ZIP Editor TUI Demo");
 
-            /* add input fields */
-            InputField* nameField = ui.addInputField("Name:", 5, 10, 30, InputType::STRING, "default_name");
+            /* add input fields - storing pointers to retrieve values later */
+            InputField* nameField = ui.addInputField("Filename:", 5, 10, 30, InputType::STRING, "document.txt");
             InputField* passwordField = ui.addInputField("Password:", 7, 10, 30, InputType::STRING);
-            InputField* hexField = ui.addInputField("Hex Value:", 9, 10, 30, InputType::HEX, "1A2B3C");
+            InputField* hexField = ui.addInputField("Hex Flag:", 9, 10, 10, InputType::HEX, "FF00");
 
-            /* add buttons */
-            ui.addButton("OK", 11, 10, ButtonType::CONFIRM);
-            ui.addButton("Cancel", 11, 25, ButtonType::CANCEL);
+            /* add buttons with different types */
+            Button* okButton = ui.addButton("OK", 11, 10, ButtonType::CONFIRM);
+            Button* cancelButton = ui.addButton("Cancel", 11, 25, ButtonType::CANCEL);
+            Button* helpButton = ui.addButton("Help", 11, 40, ButtonType::CUSTOM);
 
             /* run the UI main loop and get result */
+            /* UIResult will indicate which button was pressed or if ESC was pressed */
             UIResult result = ui.run();
 
-            /* get results after UI exits */
+            /* save input values BEFORE shutting down UI */
+            /* this is crucial because UI components may be destroyed during shutdown */
+            std::string filename, password, hexFlag;
             if (result == UIResult::CONFIRM) {
-                std::cout << "Configuration saved:\n";
-                std::cout << "  Name: = " << nameField->getValue() << std::endl;
-                std::cout << "  Password: = " << passwordField->getValue() << std::endl;
-                std::cout << "  Hex Value: = " << hexField->getValue() << std::endl;
-            } else {
-                std::cout << "Configuration cancelled\n";
+                /* retrieve values while UI components are still valid */
+                filename = nameField->getValue();
+                password = passwordField->getValue();
+                hexFlag = hexField->getValue();
             }
 
-            /* ensure shutdown is called even if exception occurs */
+            /* ensure UI is shut down */
             ui.shutdown();
+
+            /* process the result based on which button was pressed */
+            std::cout << "\n--- TUI Interaction Results ---\n";
+            
+            /* determine which button was pressed based on result */
+            if (result == UIResult::CONFIRM) {
+                std::cout << "✓ OK button was pressed" << std::endl;
+                
+                /* display saved input values */
+                std::cout << "\nRetrieved input values:\n";
+                std::cout << "  Filename: " << filename << std::endl;
+                std::cout << "  Password: " << password << std::endl;
+                std::cout << "  Hex Flag: " << hexFlag << std::endl;
+                
+                /* example of how to use the retrieved data */
+                
+                std::cout << "\nData processing example:\n";
+                std::cout << "  - File will be processed: " << filename << std::endl;
+                std::cout << "  - Password protection: " << (password.empty() ? "Disabled" : "Enabled") << std::endl;
+                std::cout << "  - Hex flag value: 0x" << hexFlag << std::endl;
+                
+            } else if (result == UIResult::CANCEL) {
+                std::cout << "✗ Cancel button was pressed" << std::endl;
+                std::cout << "Operation cancelled by user" << std::endl;
+                
+            } else if (result == UIResult::ESC) {
+                std::cout << "⎋ Escape key was pressed" << std::endl;
+                std::cout << "Operation aborted by user" << std::endl;
+                
+            } else {
+                std::cout << "? Unknown result: " << static_cast<int>(result) << std::endl;
+            }
+            
+            std::cout << "------------------------------\n";
+
         } catch (const std::exception& e) {
             std::cerr << "Error running TUI: " << e.what() << std::endl;
         } catch (...) {
             std::cerr << "Unknown error running TUI\n";
         }
 
+        /* return true to continue interactive session */
         return true;
     }
 

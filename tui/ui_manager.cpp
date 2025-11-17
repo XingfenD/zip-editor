@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <iostream>
 #include "debug_helper.hpp"
+#include <termios.h>
+#include <unistd.h>
 
 UIManager::UIManager()
     : initialized_(false),
@@ -19,33 +21,27 @@ bool UIManager::initialize() {
         return true;
     }
 
+    /* save current terminal state before initializing ncurses */
+    def_prog_mode();
+
     /* initialize ncurses */
     initscr();
     if (!stdscr) {
         return false;
     }
 
-    /* enable special keys */
-    keypad(stdscr, TRUE);
-
-    /* disable line buffering */
-    cbreak();
-
-    /* disable echoing */
-    noecho();
-
-    /* hide cursor by default */
-    curs_set(0);
+    /* configure ncurses settings */
+    keypad(stdscr, TRUE);    /* enable special keys */
+    cbreak();                /* disable line buffering */
+    noecho();                /* disable echoing */
+    curs_set(0);             /* hide cursor */
+    mousemask(ALL_MOUSE_EVENTS, NULL); /* enable mouse events */
 
     /* initialize colors if supported */
     if (has_colors()) {
         start_color();
-        /* default color pair */
-        init_pair(1, COLOR_WHITE, COLOR_BLACK);
+        init_pair(1, COLOR_WHITE, COLOR_BLACK); /* default color pair */
     }
-
-    /* enable mouse events if needed */
-    mousemask(ALL_MOUSE_EVENTS, NULL);
 
     initialized_ = true;
     return true;
@@ -57,35 +53,51 @@ void UIManager::shutdown() {
     if (initialized_) {
         /* try to restore terminal to normal state */
         try {
-            /* ensure cursor is visible */
-            curs_set(1);
-
-            /* ensure echoing is enabled */
-            echo();
-
-            /* ensure line buffering is enabled */
-            nocbreak();
-
-            /* ensure keypad is disabled */
-            keypad(stdscr, FALSE);
+            /* disable mouse events */
+            mousemask(0, NULL);
 
             /* end ncurses mode - this is crucial */
             endwin();
 
-            /* do not call refresh() after endwin() as it will reinitialize ncurses */
-            /* which can cause issues during signal handling */
+            /* first restore the saved terminal state */
+            reset_prog_mode();
 
-            /* send more comprehensive terminal reset commands */
-            /* ensure terminal is in a clean state with proper line endings */
-            std::cout << "\033[0m"      /* reset all attributes */
-                      << "\033c"        /* reset terminal */
-                      << "\033[2J"       /* clear entire screen */
-                      << "\033[H"        /* move cursor to home position (1,1) */
-                      << "\r\n"         /* ensure newline and carriage return */
+            /* then use termios to ensure proper terminal mode for readInputWithHistory */
+            /* explicitly configure terminal to work with raw mode toggle in readInputWithHistory */
+            termios term;
+            if (tcgetattr(STDIN_FILENO, &term) == 0) {
+                /* set terminal to standard canonical mode */
+                term.c_lflag |= (ICANON | ECHO | ISIG);  /* enable canonical mode, echo, signals */
+                term.c_oflag |= (OPOST | ONLCR);         /* ensure proper output processing */
+
+                /* important: clear any ncurses-specific flags that might interfere */
+                /* only use standard flags that are widely supported */
+                term.c_lflag &= ~(IEXTEN | ECHONL | ECHOCTL);
+                term.c_iflag &= ~(IGNBRK | INLCR | PARMRK | INPCK);
+                term.c_oflag &= ~(ONLRET | ONOCR);
+
+                /* set input to use standard settings */
+                /* only enable flags that were not cleared above */
+                term.c_iflag |= (INPCK | ISTRIP | IXON);
+
+                /* apply changes immediately */
+                tcsetattr(STDIN_FILENO, TCSANOW, &term);
+            }
+
+            /* terminal reset commands for proper state */
+            std::cout << "\033[0m"     /* reset all attributes */
+                      << "\033[?25h"  /* show cursor */
+                      << "\033[?2004l" /* disable bracketed paste */
+                      << "\033[20h"   /* enable automatic line feed */
+                      << "\033[?7h"   /* enable line wrapping */
+                      << "\r"         /* explicit carriage return */
+                      << "\n"         /* newline */
                       << std::flush;
+
+            /* additional flush to ensure all reset commands are processed */
+            std::cout.flush();
         } catch (...) {
             /* silently ignore exceptions during shutdown */
-            /* even if exceptions occur, we still need to mark as uninitialized */
         }
 
         initialized_ = false;
