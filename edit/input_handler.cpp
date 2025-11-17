@@ -8,6 +8,44 @@
 /* static member initialization */
 std::map<char, std::shared_ptr<InputHandler>> InputHandlerFactory::handlers;
 
+std::shared_ptr<InputHandler> InputHandlerFactory::getHandler(char c) {
+    /* first check for exact match in the handler map */
+    auto it = handlers.find(c);
+    if (it != handlers.end()) {
+        return it->second;
+    }
+
+    /* if no exact match, check all handlers for canHandle */
+    for (const auto& [key, handler] : handlers) {
+        if (handler->canHandle(c)) {
+            return handler;
+        }
+    }
+
+    /* no handler found */
+    return nullptr;
+}
+
+void InputHandlerFactory::registerHandler(std::shared_ptr<InputHandler> handler) {
+    handlers[handler->getTriggerChar()] = handler;
+}
+
+/* helper function to find commands matching the prefix */
+std::vector<std::string> findMatchingCommands(const std::string& prefix) {
+    std::vector<std::string> matches;
+    std::vector<std::string> all_commands = CommandFactory::getAllCommands();
+
+    for (const auto& cmd : all_commands) {
+        if (cmd.compare(0, prefix.length(), prefix) == 0) {
+            matches.push_back(cmd);
+        }
+    }
+
+    /* sort matches alphabetically */
+    std::sort(matches.begin(), matches.end());
+    return matches;
+}
+
 /* enter key handler implementation */
 class EnterKeyHandler : public InputHandler {
 public:
@@ -252,44 +290,6 @@ void InputHandlerFactory::initialize() {
     registerHandler(std::make_shared<CtrlCHandler>());
     registerHandler(std::make_shared<TabKeyHandler>());
     registerHandler(std::make_shared<PrintableCharHandler>());
-}
-
-std::shared_ptr<InputHandler> InputHandlerFactory::getHandler(char c) {
-    /* first check for exact match in the handler map */
-    auto it = handlers.find(c);
-    if (it != handlers.end()) {
-        return it->second;
-    }
-
-    /* if no exact match, check all handlers for canHandle */
-    for (const auto& [key, handler] : handlers) {
-        if (handler->canHandle(c)) {
-            return handler;
-        }
-    }
-
-    /* no handler found */
-    return nullptr;
-}
-
-void InputHandlerFactory::registerHandler(std::shared_ptr<InputHandler> handler) {
-    handlers[handler->getTriggerChar()] = handler;
-}
-
-/* helper function to find commands matching the prefix */
-std::vector<std::string> findMatchingCommands(const std::string& prefix) {
-    std::vector<std::string> matches;
-    std::vector<std::string> all_commands = CommandFactory::getAllCommands();
-
-    for (const auto& cmd : all_commands) {
-        if (cmd.compare(0, prefix.length(), prefix) == 0) {
-            matches.push_back(cmd);
-        }
-    }
-
-    /* sort matches alphabetically */
-    std::sort(matches.begin(), matches.end());
-    return matches;
 }
 
 /* all handler implementations are now inline in the class definitions above */
