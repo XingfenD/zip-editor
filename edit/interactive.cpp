@@ -5,11 +5,10 @@
 #include <string>
 #include <termios.h>
 #include <unistd.h>
-#include <cctype>
-#include <limits>
 #include "debug_helper.hpp"
 #include "cmd_handler.hpp"
 #include "utils.hpp"
+#include "input_handler.hpp"
 
 /* global flag to indicate whether the program is in edit mode */
 volatile sig_atomic_t in_edit_mode = 0;
@@ -27,24 +26,15 @@ void restoreTerminal(termios &old_tio) {
     tcsetattr(STDIN_FILENO, TCSANOW, &old_tio);
 }
 
-/* helper function to find commands matching the prefix */
-std::vector<std::string> findMatchingCommands(const std::string& prefix) {
-    std::vector<std::string> matches;
-    std::vector<std::string> all_commands = CommandFactory::getAllCommands();
-
-    for (const auto& cmd : all_commands) {
-        if (cmd.compare(0, prefix.length(), prefix) == 0) {
-            matches.push_back(cmd);
-        }
+/* function to read input with arrow key support and tab completion using factory pattern */
+std::string readInputWithHistory(std::vector<std::string> &history, int &history_index, std::string &current_input) {
+    /* initialize input handler factory if not already initialized */
+    static bool initialized = false;
+    if (!initialized) {
+        InputHandlerFactory::initialize();
+        initialized = true;
     }
 
-    /* sort matches alphabetically */
-    std::sort(matches.begin(), matches.end());
-    return matches;
-}
-
-/* function to read input with arrow key support and tab completion */
-std::string readInputWithHistory(std::vector<std::string> &history, int &history_index, std::string &current_input) {
     termios old_tio;
     tcgetattr(STDIN_FILENO, &old_tio);
     setRawMode(old_tio);    /* set terminal to raw mode */
@@ -55,178 +45,15 @@ std::string readInputWithHistory(std::vector<std::string> &history, int &history
         while (true) {
             char c = getchar();
 
-            if (c == '\n') {  /* enter key */
-                std::cout << std::endl;
-                /* add non-empty command to history */
-                if (!line.empty() && (history.empty() || line != history.back())) {
-                    history.push_back(line);
+            /* get appropriate handler for this character */
+            std::shared_ptr<InputHandler> handler = InputHandlerFactory::getHandler(c);
+
+            if (handler) {
+                /* use the handler to process the input */
+                bool continue_loop = handler->handle(c, line, cursor_pos, history, history_index, current_input);
+                if (!continue_loop) {
+                    break;  /* exit loop if handler returns false */
                 }
-                history_index = -1;    /* reset history index */
-                current_input.clear();
-                break;
-            }
-            else if (c == 127 || c == '\b') {  /* backspace */
-                if (cursor_pos > 0) {
-                    /* move cursor back one position */
-                    std::cout << "\b" << std::flush;
-
-                    /* save cursor after character */
-                    std::string remaining = line.substr(cursor_pos);
-
-                    /* remove character at cursor position */
-                    line.erase(cursor_pos - 1, 1);
-                    cursor_pos--;
-
-                    /* redraw cursor after character (including space to clear last position) */
-                    std::cout << remaining << " " << std::flush;
-
-                    /* calculate number of characters to backtrack: remaining length + 1 space */
-                    int back_count = remaining.length() + 1;
-
-                    /* move cursor back to correct position */
-                    std::cout << std::string(back_count, '\b') << std::flush;
-                }
-            }
-            else if (c == 0x15) {  /* command+backspace on macos */
-                if (!line.empty()) {
-                    /* clear the entire line by moving back and overwriting with spaces */
-                    std::cout << std::string(cursor_pos, '\b');  /* move to start of input */
-                    std::cout << std::string(line.length(), ' ');  /* overwrite with spaces */
-                    std::cout << std::string(line.length(), '\b');  /* move back to start */
-                    /* clear the actual input string and reset cursor */
-                    line.clear();
-                    cursor_pos = 0;
-                }
-            }
-            else if (c == 27) {  /* esc sequence */
-                char next1 = getchar();
-                if (next1 == '[') {
-                    char next2 = getchar();
-                    if (next2 == 'A') {  /* up arrow */
-                        if (!history.empty()) {
-                            /* save current input if not already navigating */
-                            if (history_index == -1) {
-                                current_input = line;
-                                history_index = history.size();
-                            }
-                            if (history_index > 0) {
-                                history_index--;
-                                /* clear current line */
-                                std::cout << std::string(cursor_pos, '\b') << std::string(line.length(), ' ') << std::string(line.length(), '\b');
-                                /* show historical command */
-                                line = history[history_index];
-                                cursor_pos = line.length();
-                                std::cout << line << std::flush;
-                            }
-                        }
-                    }
-                    else if (next2 == 'B') {  /* down arrow */
-                        if (!history.empty() && history_index < static_cast<int>(history.size()) - 1) {
-                            history_index++;
-                            /* clear current line */
-                            std::cout << std::string(cursor_pos, '\b') << std::string(line.length(), ' ') << std::string(line.length(), '\b');
-                            /* show historical command */
-                            line = history[history_index];
-                            cursor_pos = line.length();
-                            std::cout << line << std::flush;
-                        } else if (history_index == static_cast<int>(history.size()) - 1) {
-                            /* go back to current input */
-                            history_index = -1;
-                            /* clear current line */
-                            std::cout << std::string(cursor_pos, '\b') << std::string(line.length(), ' ') << std::string(line.length(), '\b');
-                            line = current_input;
-                            cursor_pos = line.length();
-                            std::cout << line << std::flush;
-                        }
-                    }
-                    else if (next2 == 'C') {  /* right arrow */
-                        if (cursor_pos < static_cast<int>(line.length())) {
-                            std::cout << "\033[C" << std::flush;
-                            cursor_pos++;
-                        }
-                    }
-                    else if (next2 == 'D') {  /* left arrow */
-                        if (cursor_pos > 0) {
-                            std::cout << "\033[D" << std::flush;
-                            cursor_pos--;
-                        }
-                    }
-                }
-            }
-            else if (c == 3) {  /* ctrl+c */
-                line.clear();
-                cursor_pos = 0;
-                history_index = -1;
-                current_input.clear();
-                break;
-            }
-            else if (c == 9) {  /* tab key for command completion */
-                /* find the start of the current command (before cursor) */
-                size_t cmd_start = line.rfind(' ', cursor_pos - 1);
-                if (cmd_start == std::string::npos) {
-                    cmd_start = 0;
-                } else {
-                    cmd_start += 1;
-                }
-
-                /* extract the command prefix */
-                std::string prefix = line.substr(cmd_start, cursor_pos - cmd_start);
-
-                /* find matching commands */
-                std::vector<std::string> matches = findMatchingCommands(prefix);
-
-                if (matches.size() == 1) {  /* single match, complete it */
-                    std::string completion = matches[0].substr(prefix.length());
-                    line.insert(cursor_pos, completion + " ");
-                    cursor_pos += completion.length() + 1;
-
-                    /* redraw the line from cursor position */
-                    std::cout << line.substr(cursor_pos - completion.length() - 1)
-                              << std::string(line.length() - cursor_pos, '\b') << std::flush;
-                } else if (matches.size() > 1) {  /* multiple matches */
-                    /* find the longest common prefix */
-                    size_t max_len = 0;
-                    size_t min_len = std::numeric_limits<size_t>::max();
-                    for (const auto& match : matches) {
-                        min_len = std::min(min_len, match.length());
-                    }
-
-                    while (max_len < min_len) {
-                        bool same = true;
-                        char first = matches[0][max_len];
-                        for (const auto& match : matches) {
-                            if (match[max_len] != first) {
-                                same = false;
-                                break;
-                            }
-                        }
-                        if (!same) break;
-                        max_len++;
-                    }
-
-                    /* if there's a common prefix beyond what we already have */
-                    if (max_len > prefix.length()) {
-                        std::string common = matches[0].substr(prefix.length(), max_len - prefix.length());
-                        line.insert(cursor_pos, common);
-                        cursor_pos += common.length();
-
-                        /* redraw the common part */
-                        std::cout << common << line.substr(cursor_pos)
-                                  << std::string(line.length() - cursor_pos, '\b') << std::flush;
-                    } else {
-                        /* no common prefix, display all matches */
-                        std::cout << "\n";
-                        for (const auto& match : matches) {
-                            std::cout << "  " << match << std::endl;
-                        }
-                        std::cout << "> " << line << std::flush;
-                    }
-                }
-            } else if (isprint(static_cast<unsigned char>(c))) {  /* regular printable character */
-                line.insert(cursor_pos, 1, c);
-                cursor_pos++;
-                /* display the added character and the rest of the line */
-                std::cout << c << line.substr(cursor_pos) << std::string(line.length() - cursor_pos, '\b') << std::flush;
             }
             /* ignore non-printable characters except those we handle */
         }
