@@ -79,6 +79,12 @@ public:
      * @param command_name original command name
      */
     static void registerAlias(const std::string& alias, const std::string& command_name);
+
+    /**
+     * get all command names
+     * @return vector of command names
+     */
+    static std::vector<std::string> getAllCommands();
 };
 
 #endif /* CMD_HANDLER_HPP */

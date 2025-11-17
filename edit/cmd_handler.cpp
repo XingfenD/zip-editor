@@ -73,6 +73,19 @@ void CommandFactory::registerAlias(const std::string& alias, const std::string& 
     command_aliases[alias] = command_name;
 }
 
+std::vector<std::string> CommandFactory::getAllCommands() {
+    std::vector<std::string> command_list;
+    /* add all command names */
+    for (const auto& command : commands) {
+        command_list.push_back(command.first);
+    }
+    /* add all aliases */
+    for (const auto& alias : command_aliases) {
+        command_list.push_back(alias.first);
+    }
+    return command_list;
+}
+
 
 /* exit command implementation */
 class ExitCommand : public Command {

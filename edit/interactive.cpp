@@ -6,6 +6,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <cctype>
+#include <limits>
 #include "debug_helper.hpp"
 #include "cmd_handler.hpp"
 #include "utils.hpp"
@@ -26,7 +27,23 @@ void restoreTerminal(termios &old_tio) {
     tcsetattr(STDIN_FILENO, TCSANOW, &old_tio);
 }
 
-/* function to read input with arrow key support */
+/* helper function to find commands matching the prefix */
+std::vector<std::string> findMatchingCommands(const std::string& prefix) {
+    std::vector<std::string> matches;
+    std::vector<std::string> all_commands = CommandFactory::getAllCommands();
+
+    for (const auto& cmd : all_commands) {
+        if (cmd.compare(0, prefix.length(), prefix) == 0) {
+            matches.push_back(cmd);
+        }
+    }
+
+    /* sort matches alphabetically */
+    std::sort(matches.begin(), matches.end());
+    return matches;
+}
+
+/* function to read input with arrow key support and tab completion */
 std::string readInputWithHistory(std::vector<std::string> &history, int &history_index, std::string &current_input) {
     termios old_tio;
     tcgetattr(STDIN_FILENO, &old_tio);
@@ -143,7 +160,69 @@ std::string readInputWithHistory(std::vector<std::string> &history, int &history
                 current_input.clear();
                 break;
             }
-            else if (isprint(static_cast<unsigned char>(c))) {  /* regular printable character */
+            else if (c == 9) {  /* tab key for command completion */
+                /* find the start of the current command (before cursor) */
+                size_t cmd_start = line.rfind(' ', cursor_pos - 1);
+                if (cmd_start == std::string::npos) {
+                    cmd_start = 0;
+                } else {
+                    cmd_start += 1;
+                }
+
+                /* extract the command prefix */
+                std::string prefix = line.substr(cmd_start, cursor_pos - cmd_start);
+
+                /* find matching commands */
+                std::vector<std::string> matches = findMatchingCommands(prefix);
+
+                if (matches.size() == 1) {  /* single match, complete it */
+                    std::string completion = matches[0].substr(prefix.length());
+                    line.insert(cursor_pos, completion + " ");
+                    cursor_pos += completion.length() + 1;
+
+                    /* redraw the line from cursor position */
+                    std::cout << line.substr(cursor_pos - completion.length() - 1)
+                              << std::string(line.length() - cursor_pos, '\b') << std::flush;
+                } else if (matches.size() > 1) {  /* multiple matches */
+                    /* find the longest common prefix */
+                    size_t max_len = 0;
+                    size_t min_len = std::numeric_limits<size_t>::max();
+                    for (const auto& match : matches) {
+                        min_len = std::min(min_len, match.length());
+                    }
+
+                    while (max_len < min_len) {
+                        bool same = true;
+                        char first = matches[0][max_len];
+                        for (const auto& match : matches) {
+                            if (match[max_len] != first) {
+                                same = false;
+                                break;
+                            }
+                        }
+                        if (!same) break;
+                        max_len++;
+                    }
+
+                    /* if there's a common prefix beyond what we already have */
+                    if (max_len > prefix.length()) {
+                        std::string common = matches[0].substr(prefix.length(), max_len - prefix.length());
+                        line.insert(cursor_pos, common);
+                        cursor_pos += common.length();
+
+                        /* redraw the common part */
+                        std::cout << common << line.substr(cursor_pos)
+                                  << std::string(line.length() - cursor_pos, '\b') << std::flush;
+                    } else {
+                        /* no common prefix, display all matches */
+                        std::cout << "\n";
+                        for (const auto& match : matches) {
+                            std::cout << "  " << match << std::endl;
+                        }
+                        std::cout << "> " << line << std::flush;
+                    }
+                }
+            } else if (isprint(static_cast<unsigned char>(c))) {  /* regular printable character */
                 line.insert(cursor_pos, 1, c);
                 cursor_pos++;
                 /* display the added character and the rest of the line */
