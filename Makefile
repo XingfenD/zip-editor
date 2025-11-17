@@ -2,13 +2,13 @@
 
 # settings of compiler
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Wextra -I./utils -I./zip_seg -I./main -MMD -MP
+CXXFLAGS = -std=c++17 -Wall -Wextra -I./utils -I./zip_seg -I./main -I./edit -MMD -MP
 LDFLAGS =
 
 # target name
 TARGET = zip_editor.out
 
-SRCS = main.cpp $(wildcard utils/*.cpp) $(wildcard zip_seg/*.cpp) $(wildcard main/*.cpp)
+SRCS = main.cpp $(wildcard utils/*.cpp) $(wildcard zip_seg/*.cpp) $(wildcard main/*.cpp) $(wildcard edit/*.cpp)
 
 OBJS = $(SRCS:.cpp=.o)
 # dependency files

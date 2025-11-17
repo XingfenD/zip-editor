@@ -6,6 +6,7 @@
 #include <csignal>
 #include "main_callee.hpp"
 #include "debug_helper.hpp"
+#include "interactive.hpp"
 
 int main(int argc, char *argv[]) {
     ParsedOptions options;

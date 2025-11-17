@@ -11,6 +11,5 @@ struct ParsedOptions {
 };
 
 int parseCommandLineOptions(int argc, char* argv[], ParsedOptions& options);
-void edit(ZipHandler& zip_handler);
 
 #endif /* MAIN_CALLEE_HPP */
