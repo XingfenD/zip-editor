@@ -109,24 +109,50 @@ class DebugServer:
             client_socket
             client_address
         """
+        import struct
+
         try:
             while self.running:
-                # receive data from client
-                data = client_socket.recv(self.buffer_size)
+                # read 4 bytes length prefix (big endian)
+                length_data = b''
+                length_expected = 4  # 4 bytes length prefix
 
-                if not data:
-                    # client closed connection
-                    with self.lock:
-                        self.client_count = max(0, self.client_count - 1)
-                        print(f"[-] 客户端 {client_address[0]}:{client_address[1]} 断开连接")
-                    break
 
-                # decode data from client
+
+                while len(length_data) < length_expected:
+                    chunk = client_socket.recv(length_expected - len(length_data))
+                    if not chunk:
+                        # client closed connection
+                        with self.lock:
+                            self.client_count = max(0, self.client_count - 1)
+                            print(f"[-] 客户端 {client_address[0]}:{client_address[1]} 断开连接")
+                        return
+                    length_data += chunk
+
+                # convert big endian to host byte order (4 bytes)
+                message_length = struct.unpack('!I', length_data)[0]
+
+                # read complete message content based on length
+                message_data = b''
+                remaining = message_length
+
+                while remaining > 0:
+                    chunk = client_socket.recv(min(remaining, self.buffer_size))
+                    if not chunk:
+                        # client closed connection during message reception
+                        with self.lock:
+                            self.client_count = max(0, self.client_count - 1)
+                            print(f"[-] 客户端 {client_address[0]}:{client_address[1]} 断开连接")
+                        return
+                    message_data += chunk
+                    remaining -= len(chunk)
+
+                # decode and display complete message content
                 try:
-                    message = data.decode('utf-8')
+                    message = message_data.decode('utf-8')
                 except UnicodeDecodeError:
-                    # if cannot decode as UTF-8, try other encoding or show raw data
-                    message = f"[无法解码的二进制数据: {len(data)} 字节]"
+                    # if cannot decode as UTF-8, show raw data info
+                    message = f"[无法解码的二进制数据: {len(message_data)} 字节]"
 
                 # display received message
                 with self.lock:

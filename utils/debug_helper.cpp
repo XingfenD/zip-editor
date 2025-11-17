@@ -183,7 +183,32 @@ bool RemoteDebugClient::sendData(const std::string& data) {
             }
         }
 
-        /* try to send data */
+        /* send data length prefix (4 bytes, big endian) */
+        uint32_t dataLength = static_cast<uint32_t>(data.length());
+        uint32_t networkOrderLength = 0;
+
+        /* convert to network byte order (big endian) */
+        #ifdef _WIN32
+        networkOrderLength = htonl(dataLength);
+        #else
+        networkOrderLength = htonl(dataLength);
+        #endif
+
+        /* send length prefix */
+        size_t lengthSent = send(sockfd, reinterpret_cast<const char*>(&networkOrderLength), sizeof(networkOrderLength), 0);
+        if (lengthSent != sizeof(networkOrderLength)) {
+            /* length send failed */
+            CLOSE_SOCKET(sockfd);
+            sockfd = INVALID_SOCKET;
+
+            retries--;
+            if (retries > 0) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
+            continue;
+        }
+
+        /* send actual data */
         size_t bytesSent = send(sockfd, data.c_str(), data.length(), 0);
 
         /* check if send is successful */

@@ -262,6 +262,24 @@ public:
     }
 };
 
+#ifdef REMOTE_DEBUG_ON
+class TestDebugCommand : public Command {
+public:
+    TestDebugCommand() : Command("test_debug") {}
+
+    bool execute(ZipHandler& zip_handler, const std::vector<std::string>& params) override {
+        for (int i = 0; i < 500; i++) {
+            DEBUG_LOG_FMT("test%d", i);
+        }
+        return true;
+    }
+
+    std::string getDescription() const override {
+        return "Test debug command";
+    }
+};
+#endif /* REMOTE_DEBUG_ON */
+
 /* specific command factory methods */
 std::shared_ptr<Command> createExitCommand() {
     return std::make_shared<ExitCommand>();
@@ -286,7 +304,11 @@ std::shared_ptr<Command> createSaveCommand() {
 std::shared_ptr<Command> createListCommand() {
     return std::make_shared<ListCommand>();
 }
-
+#ifdef REMOTE_DEBUG_ON
+std::shared_ptr<Command> createTestDebugCommand() {
+    return std::make_shared<TestDebugCommand>();
+}
+#endif /* REMOTE_DEBUG_ON */
 /* command factory implementation */
 void CommandFactory::initialize() {
     /* register all commands */
@@ -296,6 +318,9 @@ void CommandFactory::initialize() {
     registerCommand(createClearCommand());
     registerCommand(createSaveCommand());
     registerCommand(createListCommand());
+#ifdef REMOTE_DEBUG_ON
+    registerCommand(createTestDebugCommand());
+#endif /* REMOTE_DEBUG_ON */
 
     /* register aliases */
     for (const auto& command : commands) {
