@@ -68,18 +68,6 @@ std::string readInputWithHistory(std::vector<std::string> &history, int &history
     return line;
 }
 
-/* signal handler function to handle Ctrl+C */
-void signalHandler(int signal) {
-    if (signal == SIGINT) {
-        /* check if we are in edit mode - keeping this distinction for future extension */
-        if (in_edit_mode) {
-        }
-        /* always use default behavior (terminate the program) when receiving SIGINT */
-        std::signal(signal, SIG_DFL);
-        std::raise(signal);
-    }
-}
-
 /* This function is now handled by the HelpCommand class */
 void displayHelp() {
     std::cout << CommandFactory::sprintHelp() << std::endl;
@@ -94,8 +82,7 @@ void edit(ZipHandler& zip_handler) {
     int history_index = -1;  /* -1 means not navigating history */
     std::string current_input;  /* store current input when navigating history */
 
-    /* set up signal handler for Ctrl+C */
-    std::signal(SIGINT, signalHandler);
+    /* signal handling is now managed by SignalManager class */
     in_edit_mode = 1;
 
     /* initialize command factory */
