@@ -31,7 +31,6 @@ std::string readInputWithHistory(std::vector<std::string> &history, int &history
     termios old_tio;
     tcgetattr(STDIN_FILENO, &old_tio);
     setRawMode(old_tio);    /* set terminal to raw mode */
-
     std::string line;
     int cursor_pos = 0;
 
@@ -51,14 +50,24 @@ std::string readInputWithHistory(std::vector<std::string> &history, int &history
             }
             else if (c == 127 || c == '\b') {  /* backspace */
                 if (cursor_pos > 0) {
-                    /* move cursor back, print space to clear character, then move back again */
-                    std::cout << "\b \b" << std::flush;
+                    /* move cursor back one position */
+                    std::cout << "\b" << std::flush;
+
+                    /* save cursor after character */
+                    std::string remaining = line.substr(cursor_pos);
+
+                    /* remove character at cursor position */
                     line.erase(cursor_pos - 1, 1);
                     cursor_pos--;
-                    /* if there are characters after the cursor position, redraw them */
-                    if (cursor_pos < static_cast<int>(line.length())) {
-                        std::cout << line.substr(cursor_pos) << " " << std::string(line.length() - cursor_pos, '\b') << std::flush;
-                    }
+
+                    /* redraw cursor after character (including space to clear last position) */
+                    std::cout << remaining << " " << std::flush;
+
+                    /* calculate number of characters to backtrack: remaining length + 1 space */
+                    int back_count = remaining.length() + 1;
+
+                    /* move cursor back to correct position */
+                    std::cout << std::string(back_count, '\b') << std::flush;
                 }
             }
             else if (c == 0x15) {  /* command+backspace on macos */
@@ -67,7 +76,6 @@ std::string readInputWithHistory(std::vector<std::string> &history, int &history
                     std::cout << std::string(cursor_pos, '\b');  /* move to start of input */
                     std::cout << std::string(line.length(), ' ');  /* overwrite with spaces */
                     std::cout << std::string(line.length(), '\b');  /* move back to start */
-
                     /* clear the actual input string and reset cursor */
                     line.clear();
                     cursor_pos = 0;
@@ -173,7 +181,6 @@ void displayHelp() {
 void edit(ZipHandler& zip_handler) {
     std::string command;
     bool running = true;
-
     /* command history storage */
     std::vector<std::string> history;
     int history_index = -1;  /* -1 means not navigating history */

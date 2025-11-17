@@ -278,6 +278,20 @@ public:
         return "Test debug command";
     }
 };
+
+class ReconnectDebugCommand : public Command {
+public:
+    ReconnectDebugCommand() : Command("reconnect_debug") {}
+
+    bool execute(ZipHandler& zip_handler, const std::vector<std::string>& params) override {
+        RemoteDebugClient::getInstance().initialize("localhost", 9000);
+        return true;
+    }
+
+    std::string getDescription() const override {
+        return "Reconnect debug server";
+    }
+};
 #endif /* REMOTE_DEBUG_ON */
 
 /* specific command factory methods */
@@ -304,11 +318,17 @@ std::shared_ptr<Command> createSaveCommand() {
 std::shared_ptr<Command> createListCommand() {
     return std::make_shared<ListCommand>();
 }
+
 #ifdef REMOTE_DEBUG_ON
 std::shared_ptr<Command> createTestDebugCommand() {
     return std::make_shared<TestDebugCommand>();
 }
+
+std::shared_ptr<Command> createReconnectDebugCommand() {
+    return std::make_shared<ReconnectDebugCommand>();
+}
 #endif /* REMOTE_DEBUG_ON */
+
 /* command factory implementation */
 void CommandFactory::initialize() {
     /* register all commands */
@@ -320,6 +340,7 @@ void CommandFactory::initialize() {
     registerCommand(createListCommand());
 #ifdef REMOTE_DEBUG_ON
     registerCommand(createTestDebugCommand());
+    registerCommand(createReconnectDebugCommand());
 #endif /* REMOTE_DEBUG_ON */
 
     /* register aliases */
