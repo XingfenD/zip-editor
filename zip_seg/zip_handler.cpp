@@ -99,9 +99,26 @@ void ZipHandler::printLocalFileHeaders() const {
         header.print();
     }
 }
+
+void ZipHandler::printLocalFileHeaders(uint16_t index) const {
+    if (index < local_file_headers.size()) {
+        local_file_headers[index].print();
+    } else {
+        std::cerr << "Error: Local file header index out of range" << std::endl;
+    }
+}
+
 void ZipHandler::printCentralDirectoryHeaders() const {
     for (const auto& header : central_directory_headers) {
         header.print();
+    }
+}
+
+void ZipHandler::printCentralDirectoryHeaders(uint16_t index) const {
+    if (index < central_directory_headers.size()) {
+        central_directory_headers[index].print();
+    } else {
+        std::cerr << "Error: Central directory header index out of range" << std::endl;
     }
 }
 

@@ -15,7 +15,9 @@ public:
 
     /* ++++ commands ++++ */
     void printLocalFileHeaders() const;
+    void printLocalFileHeaders(uint16_t index) const;
     void printCentralDirectoryHeaders() const;
+    void printCentralDirectoryHeaders(uint16_t index) const;
     void printEndOfCentralDirectoryRecord() const;
 
     void listLocalFileHeaders() const;

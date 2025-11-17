@@ -51,8 +51,47 @@ public:
     PrintCommand() : Command("print") {}
 
     bool execute(ZipHandler& zip_handler, const std::vector<std::string>& params) override {
-        zip_handler.print();
+        if (params.empty() || params[0] == "") {
+            zip_handler.print();
+        } else if (params.size() >= 1) {
+            if (params[0] == "lfh") {
+                printLocalFileHeaders(zip_handler, params);
+            } else if (params[0] == "cdh") {
+                printCentralDirectoryHeaders(zip_handler, params);
+            } else if (params[0] == "eocdr") {
+                zip_handler.printEndOfCentralDirectoryRecord();
+            } else {
+                std::cout << "Error: Invalid parameter for print command" << std::endl;
+                std::cout << "Usage: print [lfh|cdh|eocdr] [index]" << std::endl;
+            }
+        }
         return true;
+    }
+
+    void printLocalFileHeaders(ZipHandler& zip_handler, const std::vector<std::string>& params) const {
+        if (params.size() >= 2) {
+            try {
+                uint16_t index = std::stoi(params[1]);
+                zip_handler.printLocalFileHeaders(index);
+            } catch (const std::invalid_argument& e) {
+                std::cerr << "Error: Invalid index for local file header" << std::endl;
+            }
+        } else {
+            zip_handler.printLocalFileHeaders();
+        }
+    }
+
+    void printCentralDirectoryHeaders(ZipHandler& zip_handler, const std::vector<std::string>& params) const {
+        if (params.size() >= 2) {
+            try {
+                uint16_t index = std::stoi(params[1]);
+                zip_handler.printCentralDirectoryHeaders(index);
+            } catch (const std::invalid_argument& e) {
+                std::cerr << "Error: Invalid index for central directory header" << std::endl;
+            }
+        } else {
+            zip_handler.printCentralDirectoryHeaders();
+        }
     }
 
     std::vector<std::string> getAliases() const override {
@@ -60,52 +99,16 @@ public:
     }
 
     std::string getDescription() const override {
-        return "Print all information about the ZIP file";
-    }
-};
-
-/* print local file headers command implementation */
-class PrintLFHCommand : public Command {
-public:
-    PrintLFHCommand() : Command("print lfh") {}
-
-    bool execute(ZipHandler& zip_handler, const std::vector<std::string>& params) override {
-        zip_handler.printLocalFileHeaders();
-        return true;
+        return "Print information about the ZIP file";
     }
 
-    std::string getDescription() const override {
-        return "Print local file headers information";
-    }
-};
-
-/* print central directory headers command implementation */
-class PrintCDHCommand : public Command {
-public:
-    PrintCDHCommand() : Command("print cdh") {}
-
-    bool execute(ZipHandler& zip_handler, const std::vector<std::string>& params) override {
-        zip_handler.printCentralDirectoryHeaders();
-        return true;
-    }
-
-    std::string getDescription() const override {
-        return "Print central directory headers information";
-    }
-};
-
-/* print end of central directory record command implementation */
-class PrintEOCDRCommand : public Command {
-public:
-    PrintEOCDRCommand() : Command("print eocdr") {}
-
-    bool execute(ZipHandler& zip_handler, const std::vector<std::string>& params) override {
-        zip_handler.printEndOfCentralDirectoryRecord();
-        return true;
-    }
-
-    std::string getDescription() const override {
-        return "Print end of central directory record information";
+    std::string buildHelp() const override {
+        std::string ret = "print [lfh|cdh|eocdr] [index]";
+        if (ret.length() < 15) {
+            ret.append(15 - ret.length(), ' ');
+        }
+        ret += "- " + getDescription();
+        return ret;
     }
 };
 
@@ -166,10 +169,6 @@ public:
     ListCommand() : Command("list") {}
 
     bool execute(ZipHandler& zip_handler, const std::vector<std::string>& params) override {
-        DEBUG_LOG_FMT("params size: %d\n", params.size());
-        for (const auto& param: params) {
-            DEBUG_LOG_FMT("param: %s", param.c_str());
-        }
         if (params.size() == 0 || params[0] == "") {
             zip_handler.listLocalFileHeaders();
             zip_handler.listCentralDirectoryHeaders();
@@ -208,18 +207,6 @@ std::shared_ptr<Command> createPrintCommand() {
     return std::make_shared<PrintCommand>();
 }
 
-std::shared_ptr<Command> createPrintLFHCommand() {
-    return std::make_shared<PrintLFHCommand>();
-}
-
-std::shared_ptr<Command> createPrintCDHCommand() {
-    return std::make_shared<PrintCDHCommand>();
-}
-
-std::shared_ptr<Command> createPrintEOCDRCommand() {
-    return std::make_shared<PrintEOCDRCommand>();
-}
-
 std::shared_ptr<Command> createClearCommand() {
     return std::make_shared<ClearCommand>();
 }
@@ -238,9 +225,6 @@ void CommandFactory::initialize() {
     registerCommand(createExitCommand());
     registerCommand(createHelpCommand());
     registerCommand(createPrintCommand());
-    registerCommand(createPrintLFHCommand());
-    registerCommand(createPrintCDHCommand());
-    registerCommand(createPrintEOCDRCommand());
     registerCommand(createClearCommand());
     registerCommand(createSaveCommand());
     registerCommand(createListCommand());

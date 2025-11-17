@@ -85,9 +85,6 @@ public:
 extern std::shared_ptr<Command> createExitCommand();
 extern std::shared_ptr<Command> createHelpCommand();
 extern std::shared_ptr<Command> createPrintCommand();
-extern std::shared_ptr<Command> createPrintLFHCommand();
-extern std::shared_ptr<Command> createPrintCDHCommand();
-extern std::shared_ptr<Command> createPrintEOCDRCommand();
 extern std::shared_ptr<Command> createClearCommand();
 extern std::shared_ptr<Command> createSaveCommand();
 extern std::shared_ptr<Command> createListCommand();
