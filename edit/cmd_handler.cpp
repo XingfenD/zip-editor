@@ -1,5 +1,7 @@
 #include "cmd_handler.hpp"
 #include <iostream>
+#include <ctime>
+#include <unistd.h>
 #include "debug_helper.hpp"
 
 /* static member initialization*/
@@ -305,6 +307,35 @@ public:
         return "Reconnect debug server";
     }
 };
+
+class TestCtrlC : public Command {
+public:
+    TestCtrlC() : Command("test_ctrl_c") {}
+
+    bool execute(ZipHandler& zip_handler, const std::vector<std::string>& params) override {
+        std::cout << "Test counter execution, will exit after 15 seconds" << std::endl;
+
+        /* initialize counter */
+        int counter = 0;
+        const int max_loops = 5; /* 5 loops * 3 seconds = 15 seconds */
+        const int sleep_time = 3; /* sleep for 3 seconds */
+
+        /* loop with counter incrementing every 3 seconds */
+        while (counter < max_loops) {
+            sleep(sleep_time);
+            counter++;
+            std::cout << "Counter incremented to: " << counter << std::endl;
+            DEBUG_LOG_FMT("TestCtrlC counter value: %d", counter);
+        }
+
+        std::cout << "15 seconds elapsed, exiting loop" << std::endl;
+        return true;
+    }
+
+    std::string getDescription() const override {
+        return "Test Ctrl+C signal handler";
+    }
+};
 #endif /* REMOTE_DEBUG_ON */
 
 /* specific command factory methods */
@@ -340,6 +371,10 @@ std::shared_ptr<Command> createTestDebugCommand() {
 std::shared_ptr<Command> createReconnectDebugCommand() {
     return std::make_shared<ReconnectDebugCommand>();
 }
+
+std::shared_ptr<Command> createTestCtrlCCommand() {
+    return std::make_shared<TestCtrlC>();
+}
 #endif /* REMOTE_DEBUG_ON */
 
 /* command factory implementation */
@@ -354,6 +389,7 @@ void CommandFactory::initialize() {
 #ifdef REMOTE_DEBUG_ON
     registerCommand(createTestDebugCommand());
     registerCommand(createReconnectDebugCommand());
+    registerCommand(createTestCtrlCCommand());
 #endif /* REMOTE_DEBUG_ON */
 
     /* register aliases */

@@ -70,11 +70,11 @@ std::string readInputWithHistory(std::vector<std::string> &history, int &history
 
 /* signal handler function to handle Ctrl+C */
 void signalHandler(int signal) {
-    if (signal == SIGINT && in_edit_mode) {
-        /* In edit mode, catch Ctrl+C and print a prompt instead of terminating */
-        std::cout << "\n> " << std::flush;
-    } else {
-        /* In non-edit mode, use default behavior (terminate the program) */
+    if (signal == SIGINT) {
+        /* check if we are in edit mode - keeping this distinction for future extension */
+        if (in_edit_mode) {
+        }
+        /* always use default behavior (terminate the program) when receiving SIGINT */
         std::signal(signal, SIG_DFL);
         std::raise(signal);
     }
