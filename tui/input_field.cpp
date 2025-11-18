@@ -6,7 +6,6 @@ InputField::InputField(const std::string& name, const std::string& label, int ro
     : name_(name),
       label_(label),
       value_(default_value),
-      default_value_(default_value),
       row_(row),
       col_(col),
       capacity_(capacity),
@@ -26,7 +25,6 @@ InputField::InputField(const std::string& name, const std::string& label, int ro
     : name_(name),
       label_(label),
       value_(default_value),
-      default_value_(default_value),
       row_(row),
       col_(col),
       capacity_(capacity),
@@ -34,6 +32,11 @@ InputField::InputField(const std::string& name, const std::string& label, int ro
       cursor_pos_(static_cast<int>(default_value.length())),
       type_(type),
       focused_(false) {
+    /* validate default value against capacity */
+    if (value_.length() > static_cast<size_t>(capacity_)) {
+        value_ = value_.substr(0, capacity_);
+        cursor_pos_ = capacity_;
+    }
 }
 
 InputField::~InputField() {}
@@ -94,16 +97,8 @@ void InputField::setInputType(InputType type) {
     }
 }
 
-void InputField::setDefaultValue(const std::string& default_value) {
-    default_value_ = default_value;
-    if (value_.empty()) {
-        value_ = default_value;
-        cursor_pos_ = static_cast<int>(default_value.length());
-    }
-}
-
 std::string InputField::getValue() const {
-    return value_.empty() ? default_value_ : value_;
+    return value_;
 }
 
 void InputField::setValue(const std::string& value) {
@@ -135,14 +130,14 @@ void InputField::setFocused(bool focused) {
 
 void InputField::getCursorPosition(int& row, int& col) const {
     row = row_;
-    
+
     /* calculate display parameters to determine cursor column */
     int field_start_col = col_ + label_.length() + 2;
     int display_start = 0;
     if (cursor_pos_ >= display_width_) {
         display_start = cursor_pos_ - display_width_ + 1;
     }
-    
+
     col = field_start_col + (cursor_pos_ - display_start);
 }
 

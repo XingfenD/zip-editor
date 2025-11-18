@@ -104,11 +104,7 @@ public:
      */
     void setInputType(InputType type);
 
-    /**
-     * set default value
-     * @param default_value default value
-     */
-    void setDefaultValue(const std::string& default_value);
+
 
     /**
      * get current value
@@ -190,7 +186,6 @@ private:
     std::string name_;           /**< field name */
     std::string label_;          /**< field label */
     std::string value_;          /**< input value */
-    std::string default_value_;  /**< default value */
     int row_;                    /**< row position */
     int col_;                    /**< column position */
     int capacity_;               /**< maximum characters allowed (input capacity) */

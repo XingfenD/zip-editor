@@ -29,27 +29,6 @@ void FormFactory::initializeForms() {
     }
 
     /* register common forms */
-
-    #ifdef REMOTE_DEBUG_ON
-    /* file operation form - similar to TestTUICommand */
-    registerForm("file_operation",
-        [](UIManager& ui) {
-            /* add header */
-            ui.addHeader("File Operation");
-
-            /* add input fields */
-            ui.addInputField("filename", "Filename:", 5, 10, 30, InputType::STRING, "document.txt");
-            ui.addInputField("password", "Password:", 7, 10, 30, InputType::STRING);
-            ui.addInputField("hex_flag", "Hex Flag:", 9, 10, 10, InputType::HEX, "FF00");
-
-            /* add buttons */
-            ui.addConfirmButton();
-            ui.addCancelButton();
-        }
-    );
-
-    #endif /* REMOTE_DEBUG_ON */
-
     /* simple confirmation form */
     registerForm("confirmation",
         [](UIManager& ui) {
@@ -75,7 +54,21 @@ void FormFactory::initializeForms() {
             /* add buttons */
             ui.addConfirmButton();
             ui.addCancelButton();
-        });
+        },
+    [](UIManager& ui, UIResult result) {
+        FormResult form_result;
+        form_result.result_type = result;
+        if (result == UIResult::CANCEL || result == UIResult::NONE || result == UIResult::ESC) {
+            return form_result;
+        }
+
+        /* collect input field values using name as key */
+        for (const auto& field : ui.getInputFields()) {
+            form_result.values[field->getName()] = field->getValue();
+        }
+
+        return form_result;
+    });
 
     initialized_ = true;
 }
