@@ -49,6 +49,7 @@ public:
 
     /**
      * add input field component with default display width (capacity + 1)
+     * @param name field name
      * @param label field label
      * @param row row position
      * @param col column position
@@ -57,12 +58,14 @@ public:
      * @param default_value default value
      * @return pointer to the created input field
      */
-    InputField* addInputField(const std::string& label, int row, int col, int capacity,
+    InputField* addInputField(const std::string& name, const std::string& label,
+                             int row, int col, int capacity,
                              InputType type = InputType::STRING,
                              const std::string& default_value = "");
-    
+
     /**
      * add input field component with explicit display width
+     * @param name field name
      * @param label field label
      * @param row row position
      * @param col column position
@@ -72,7 +75,8 @@ public:
      * @param default_value default value
      * @return pointer to the created input field
      */
-    InputField* addInputField(const std::string& label, int row, int col, int capacity, int display_width,
+    InputField* addInputField(const std::string& name, const std::string& label,
+                             int row, int col, int capacity, int display_width,
                              InputType type = InputType::STRING,
                              const std::string& default_value = "");
 
@@ -188,23 +192,6 @@ public:
      * @return reference to input fields vector
      */
     const std::vector<std::shared_ptr<InputField>>& getInputFields() const;
-
-    /**
-     * add input field component with name (for form handling)
-     * @param name field name (for reference)
-     * @param label field label
-     * @param row row position
-     * @param col column position
-     * @param width field width
-     * @param type input type
-     * @param default_value default value
-     * @return pointer to the created input field
-     */
-    InputField* addInputField(const std::string& name, const std::string& label, int row, int col, int capacity,
-                             InputType type = InputType::STRING,
-                             const std::string& default_value = "");
-    InputField* addInputField(const std::string& name, const std::string& label, int row, int col, int capacity, int display_width,
-                              InputType type, const std::string& default_value);
 
 private:
     /**

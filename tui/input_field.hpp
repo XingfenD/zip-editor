@@ -5,8 +5,8 @@
 
 /* input field type */
 enum class InputType {
-    STRING,  /**< string input */
-    HEX      /**< hexadecimal input */
+    STRING = 0,     /**< string input */
+    HEX = 1         /**< hexadecimal input */
 };
 
 class InputField {
@@ -29,9 +29,10 @@ public:
      * @param type input type (string or hex)
      * @param default_value default value
      */
-    InputField(const std::string& label, int row, int col, int capacity,
+    InputField(const std::string& name, const std::string& label,
+               int row, int col, int capacity,
                InputType type = InputType::STRING, const std::string& default_value = "");
-    
+
     /**
      * constructor with explicit display width
      * @param label field label text
@@ -42,10 +43,17 @@ public:
      * @param type input type (string or hex)
      * @param default_value default value
      */
-    InputField(const std::string& label, int row, int col, int capacity, int display_width,
+    InputField(const std::string& name, const std::string& label,
+               int row, int col, int capacity, int display_width,
                InputType type = InputType::STRING, const std::string& default_value = "");
 
     virtual ~InputField();
+
+    /**
+     * get field name
+     * @return current name text
+     */
+    std::string getName() const;
 
     /**
      * set field label
@@ -71,19 +79,19 @@ public:
      * @param capacity new maximum characters allowed
      */
     void setCapacity(int capacity);
-    
+
     /**
      * get input capacity
      * @return maximum characters allowed
      */
     int getCapacity() const;
-    
+
     /**
      * set display width
      * @param display_width new visible width
      */
     void setDisplayWidth(int display_width);
-    
+
     /**
      * get display width
      * @return visible display width
@@ -179,6 +187,7 @@ private:
      */
     void backspace();
 
+    std::string name_;           /**< field name */
     std::string label_;          /**< field label */
     std::string value_;          /**< input value */
     std::string default_value_;  /**< default value */

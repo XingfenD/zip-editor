@@ -1,9 +1,10 @@
 #include "input_field.hpp"
 #include <ncurses.h>
 
-InputField::InputField(const std::string& label, int row, int col, int capacity,
+InputField::InputField(const std::string& name, const std::string& label, int row, int col, int capacity,
                        InputType type, const std::string& default_value)
-    : label_(label),
+    : name_(name),
+      label_(label),
       value_(default_value),
       default_value_(default_value),
       row_(row),
@@ -20,9 +21,10 @@ InputField::InputField(const std::string& label, int row, int col, int capacity,
     }
 }
 
-InputField::InputField(const std::string& label, int row, int col, int capacity, int display_width,
+InputField::InputField(const std::string& name, const std::string& label, int row, int col, int capacity, int display_width,
                        InputType type, const std::string& default_value)
-    : label_(label),
+    : name_(name),
+      label_(label),
       value_(default_value),
       default_value_(default_value),
       row_(row),
@@ -34,8 +36,10 @@ InputField::InputField(const std::string& label, int row, int col, int capacity,
       focused_(false) {
 }
 
-InputField::~InputField() {
-    /* input field doesn't manage cursor visibility anymore */
+InputField::~InputField() {}
+
+std::string InputField::getName() const {
+    return name_;
 }
 
 void InputField::setLabel(const std::string& label) {
