@@ -22,6 +22,32 @@ void inputFieldAdder(UIManager& ui, const std::vector<InputDescriptor>& input_de
     }
 }
 
+bool checkRelatedFields(const FieldDescriptor& srcField, const FieldDescriptor& relatedField, std::map<std::string, std::string>& inputMap) {
+    std::string src_result = inputMap[srcField.getName()];
+    std::string related_result = inputMap[relatedField.getName()];
+    /* get the length of related field from src field */
+    if (srcField.getType() != FieldType::HEX) {
+        throw std::invalid_argument("Source field must be HEX type");
+    }
+    int related_len = hexStrToInt(src_result);
+
+    /* branch by related field type */
+    switch (relatedField.getType()) {
+        case FieldType::HEX:
+            if (related_result.length() / 2 != static_cast<size_t>(related_len)) {
+                return false;
+            }
+            break;
+        case FieldType::STRING:
+            if (related_result.length() != static_cast<size_t>(related_len)) {
+                return false;
+            }
+            break;
+    }
+
+    return true;
+}
+
 /* initialize all predefined forms */
 void FormFactory::initializeForms() {
     if (initialized_) {
@@ -56,6 +82,7 @@ void FormFactory::initializeForms() {
             ui.addCancelButton();
         },
     [](UIManager& ui, UIResult result) {
+        DEBUG_LOG("Running extractor ...");
         FormResult form_result;
         form_result.result_type = result;
         if (result == UIResult::CANCEL || result == UIResult::NONE || result == UIResult::ESC) {
@@ -65,6 +92,17 @@ void FormFactory::initializeForms() {
         /* collect input field values using name as key */
         for (const auto& field : ui.getInputFields()) {
             form_result.values[field->getName()] = field->getValue();
+        }
+
+        for (const auto& pair : LOCAL_FILE_HEADER_RELATED_FIELDS) {
+            const FieldDescriptor& field = pair.key;
+            const FieldDescriptor& related_field = pair.value;
+            DEBUG_LOG_FMT("Current Pair: key.name = %s, value.name = %s", field.getName().c_str(), field.getName().c_str());
+            const std::string src_result = form_result.values[field.getName()];
+            const std::string related_result = form_result.values[related_field.getName()];
+            if (!checkRelatedFields(field, related_field, form_result.values)) {
+                form_result.values[LFH_LENGTH_UNMATCH_KEY] = "true";
+            }
         }
 
         return form_result;

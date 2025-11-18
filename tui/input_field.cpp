@@ -123,6 +123,15 @@ void InputField::setFocused(bool focused) {
         }
         int cursor_col = col_ + label_.length() + 2 + (cursor_pos_ - display_start);
         move(row_, cursor_col);
+    } else if (!focused && focused_ && type_ == InputType::HEX) {
+        /* lose focus - pad hex input with leading zeros if needed */
+        if (!value_.empty()) {
+            /* pad with leading zeros to make length even */
+            if (value_.length() < static_cast<size_t>(capacity_)) {
+                value_ = std::string(capacity_ - value_.length(), '0') + value_;
+                cursor_pos_ = static_cast<int>(value_.length());
+            }
+        }
     }
     focused_ = focused;
     draw();

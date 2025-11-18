@@ -30,3 +30,20 @@ InputType fieldTypeToInputType(FieldType fieldType) {
             return InputType::STRING;
     }
 }
+
+int hexStrToInt(const std::string& hexStr) {
+    int value = 0;
+    for (char c : hexStr) {
+        value <<= 4;
+        if (c >= '0' && c <= '9') {
+            value += c - '0';
+        } else if (c >= 'a' && c <= 'f') {
+            value += c - 'a' + 10;
+        } else if (c >= 'A' && c <= 'F') {
+            value += c - 'A' + 10;
+        } else {
+            throw std::invalid_argument("Invalid hex character");
+        }
+    }
+    return value;
+}

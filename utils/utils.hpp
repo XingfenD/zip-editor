@@ -24,4 +24,6 @@ std::vector<std::string> splitString(const std::string& str, const std::string& 
 
 InputType fieldTypeToInputType(FieldType fieldType);
 
+int hexStrToInt(const std::string& hexStr);
+
 #endif /* UTILS_HPP */

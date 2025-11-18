@@ -4,6 +4,7 @@
 #include <string>
 #include <cctype>
 #include <vector>
+#include <map>
 
 enum class FieldType {
     STRING = 0,
@@ -17,10 +18,19 @@ private:
     FieldType type;
 public:
     FieldDescriptor(const std::string& name, int bytes, FieldType type) : name(name), bytes(bytes), type(type) {}
-
     std::string getName() const { return name; }
     int getBytes() const { return bytes; }
     FieldType getType() const { return type; }
+
+    /* parse input string to get the number of bytes it represents */
+    int getBytesFromString(std::string inputStr) const {
+        switch (type) {
+            case FieldType::STRING:
+                return inputStr.length();
+            case FieldType::HEX:
+                return inputStr.length() / 2;
+        }
+    }
 
     /* returns the field name with first letter capitalized and underscores replaced by spaces */
     std::string getTitle() const {
@@ -60,6 +70,16 @@ private:
     std::string defaultValue;
 };
 
+// 首先定义RelatedFieldPair结构体
+struct RelatedFieldPair {
+    const FieldDescriptor& key;
+    const FieldDescriptor& value;
+
+    // 可选：添加构造函数方便初始化
+    RelatedFieldPair(const FieldDescriptor& k, const FieldDescriptor& v)
+        : key(k), value(v) {}
+};
+
 
 static const FieldDescriptor SIGNATURE("signature", 4, FieldType::HEX);
 static const FieldDescriptor VERSION_NEEDED("version_needed", 2, FieldType::HEX);
@@ -92,5 +112,12 @@ static const std::vector<InputDescriptor> LOCAL_FILE_HEADER_INPUT_DESCRIPTORS = 
     InputDescriptor(EXTRA_FIELD, "1234"),
     InputDescriptor(FILE_DATA, "12345678")
 };
+
+static const std::vector<RelatedFieldPair> LOCAL_FILE_HEADER_RELATED_FIELDS = {
+    RelatedFieldPair(FILE_NAME_LENGTH, FILE_NAME),
+    RelatedFieldPair(EXTRA_FIELD_LENGTH, EXTRA_FIELD)
+};
+
+static const std::string LFH_LENGTH_UNMATCH_KEY("lfh_length_unmatch");
 
 #endif /* FIELD_DESCRIPTOR_HPP */
