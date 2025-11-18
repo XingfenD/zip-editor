@@ -29,6 +29,7 @@ public:
     FormResult showForm(const std::string& form_name, const std::map<std::string, std::string>& custom_defaults);
 
     /* register a new form template */
+    void registerForm(const std::string& name, std::function<void(UIManager&)> form_builder);
     void registerForm(const std::string& name,
                       std::function<void(UIManager&)> form_builder,
                       std::function<FormResult(UIManager&, UIResult)> result_extractor);

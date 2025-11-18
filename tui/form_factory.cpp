@@ -1,6 +1,7 @@
 #include "form_factory.hpp"
 #include "../utils/signal_manager.hpp"
 #include <iostream>
+#include "debug_helper.hpp"
 
 /* get singleton instance */
 FormFactory& FormFactory::getInstance() {
@@ -16,6 +17,7 @@ void FormFactory::initializeForms() {
 
     /* register common forms */
 
+    #ifdef REMOTE_DEBUG_ON
     /* file operation form - similar to TestTUICommand */
     registerForm("file_operation",
         [](UIManager& ui) {
@@ -30,21 +32,10 @@ void FormFactory::initializeForms() {
             /* add buttons */
             ui.addConfirmButton();
             ui.addCancelButton();
-        },
-        [](UIManager& ui, UIResult result) {
-            FormResult form_result;
-            form_result.result_type = result;
-
-            if (result == UIResult::CONFIRM) {
-                /* extract all input field values using label as key */
-                for (const auto& field : ui.getInputFields()) {
-                    form_result.values[field->getLabel()] = field->getValue();
-                }
-            }
-
-            return form_result;
         }
     );
+
+    #endif /* REMOTE_DEBUG_ON */
 
     /* simple confirmation form */
     registerForm("confirmation",
@@ -61,7 +52,24 @@ void FormFactory::initializeForms() {
         }
     );
 
-    /* add more predefined forms here as needed */
+    // registerForm("edit_lfh",
+    //     [](UIManager& ui) {},
+    //     [](UIManager& ui, UIResult result) {
+    //         FormResult form_result;
+    //         form_result.result_type = result;
+
+    //         if (result == UIResult::CONFIRM) {
+    //             /* extract all input field values using label as key */
+    //             for (const auto& field : ui.getInputFields()) {
+    //                 form_result.values[field->getLabel()] = field->getValue();
+    //             }
+    //         }
+
+    //         return form_result;
+    //     });
+
+
+
 
     initialized_ = true;
 }
@@ -92,7 +100,7 @@ FormResult FormFactory::showForm(const std::string& form_name, const std::map<st
     /* check if form exists */
     auto it = form_templates_.find(form_name);
     if (it == form_templates_.end()) {
-        std::cerr << "Error: Form template '" << form_name << "' not found!" << std::endl;
+        DEBUG_LOG_FMT("Error: Form template '%s' not found!", form_name.c_str());
         FormResult error_result;
         error_result.result_type = UIResult::NONE;
         return error_result;
@@ -155,9 +163,27 @@ FormResult FormFactory::showForm(const std::string& form_name, const std::map<st
     return result;
 }
 
+static FormResult defaultExtractor(UIManager& ui, UIResult result) {
+    FormResult form_result;
+    form_result.result_type = result;
+
+    if (result == UIResult::CONFIRM) {
+        /* extract all input field values using label as key */
+        for (const auto& field : ui.getInputFields()) {
+            form_result.values[field->getLabel()] = field->getValue();
+        }
+    }
+
+    return form_result;
+}
+
 /* register a new form template */
 void FormFactory::registerForm(const std::string& name,
                               std::function<void(UIManager&)> form_builder,
                               std::function<FormResult(UIManager&, UIResult)> result_extractor) {
     form_templates_[name] = {form_builder, result_extractor};
+}
+
+void FormFactory::registerForm(const std::string& name, std::function<void(UIManager&)> form_builder) {
+    registerForm(name, form_builder, defaultExtractor);
 }
