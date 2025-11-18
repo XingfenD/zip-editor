@@ -7,6 +7,7 @@
 #include "input_field.hpp"
 #include "button.hpp"
 #include "signal_manager.hpp"
+#include "form_factory.hpp"
 
 /* static member initialization*/
 std::map<std::string, std::shared_ptr<Command>> CommandFactory::commands;
@@ -281,6 +282,98 @@ public:
     }
 };
 
+class AddCommand : public Command {
+public:
+    AddCommand() : Command("add") {}
+
+    bool execute(ZipHandler& zip_handler, const std::vector<std::string>& params) override {
+        if (params.size() == 0 || params[0] == "") {
+            std::cout << "Error: Invalid parameter for add command" << std::endl;
+            std::cout << "Usage: add <lfh|cdh>" << std::endl;
+        } else if (params.size() == 1){
+            if (params[0] == "lfh") {
+                zip_handler.addLocalFileHeader();
+            } else if (params[0] == "cdh") {
+                zip_handler.addCentralDirectoryHeader();
+            } else {
+                std::cout << "Error: Invalid parameter for add command" << std::endl;
+                std::cout << "Usage: add <lfh|cdh>" << std::endl;
+            }
+        }
+        return true;
+    }
+
+    std::string getDescription() const override {
+        return "Add a segment to the ZIP file";
+    }
+};
+
+#ifdef REMOTE_DEBUG_ON
+/* form demo command implementation */
+class FormDemoCommand : public Command {
+public:
+    FormDemoCommand() : Command("form_demo") {}
+
+    bool execute(ZipHandler& zip_handler, const std::vector<std::string>& params) override {
+        std::cout << "Form Demo Command Executed\n";
+
+        /* get form factory instance */
+        auto& factory = FormFactory::getInstance();
+
+        /* PART 1: Show form with default values */
+        std::cout << "\nPART 1: Showing File Operation Form with default values...\n";
+        FormResult file_form_result = factory.showForm("file_operation");
+
+        /* process form result */
+        std::cout << "\n--- File Operation Form Results (Default Values) ---\n";
+        std::cout << "Result Type: " << static_cast<int>(file_form_result.result_type) << "\n";
+
+        if (file_form_result.result_type == UIResult::CONFIRM) {
+            std::cout << "Form submitted successfully!\n";
+            std::cout << "Field values:\n";
+
+            for (const auto& [name, value] : file_form_result.values) {
+                std::cout << "  " << name << ": " << value << "\n";
+            }
+        } else {
+            std::cout << "Form was cancelled or escaped!\n";
+        }
+
+        /* PART 2: Show form with custom default values */
+        std::cout << "\nPART 2: Showing File Operation Form with custom default values...\n";
+
+        /* create custom default values map */
+        std::map<std::string, std::string> custom_defaults;
+        custom_defaults["Filename:"] = "custom_document.txt";
+        custom_defaults["Password:"] = "secret123";
+        custom_defaults["Hex Flag:"] = "AAAA";
+
+        /* show form with custom defaults */
+        FormResult custom_form_result = factory.showForm("file_operation", custom_defaults);
+
+        /* process form result */
+        std::cout << "\n--- File Operation Form Results (Custom Values) ---\n";
+        std::cout << "Result Type: " << static_cast<int>(custom_form_result.result_type) << "\n";
+
+        if (custom_form_result.result_type == UIResult::CONFIRM) {
+            std::cout << "Form submitted successfully!\n";
+            std::cout << "Field values:\n";
+
+            for (const auto& [name, value] : custom_form_result.values) {
+                std::cout << "  " << name << ": " << value << "\n";
+            }
+        } else {
+            std::cout << "Form was cancelled or escaped!\n";
+        }
+
+        return true;
+    }
+
+    std::string getDescription() const override {
+        return "Demonstrate the use of predefined forms";
+    }
+};
+
 /* test_tui command implementation */
 class TestTUICommand : public Command {
 public:
@@ -319,9 +412,8 @@ public:
             InputField* hexField = ui.addInputField("Hex Flag:", 9, 10, 10, InputType::HEX, "FF00");
 
             /* add buttons with different types */
-            Button* okButton = ui.addButton("OK", 11, 10, ButtonType::CONFIRM);
-            Button* cancelButton = ui.addButton("Cancel", 11, 25, ButtonType::CANCEL);
-            Button* helpButton = ui.addButton("Help", 11, 40, ButtonType::CUSTOM);
+            ui.addButton("OK", 11, 10, ButtonType::CONFIRM);
+            ui.addButton("Cancel", 11, 25, ButtonType::CANCEL);
 
             /* run the UI main loop and get result */
             /* UIResult will indicate which button was pressed or if ESC was pressed */
@@ -393,7 +485,6 @@ public:
     }
 };
 
-#ifdef REMOTE_DEBUG_ON
 class TestDebugCommand : public Command {
 public:
     TestDebugCommand() : Command("test_debug") {}
@@ -479,11 +570,15 @@ std::shared_ptr<Command> createListCommand() {
     return std::make_shared<ListCommand>();
 }
 
+#ifdef REMOTE_DEBUG_ON
+std::shared_ptr<Command> createFormDemoCommand() {
+    return std::make_shared<FormDemoCommand>();
+}
+
 std::shared_ptr<Command> createTestTUICommand() {
     return std::make_shared<TestTUICommand>();
 }
 
-#ifdef REMOTE_DEBUG_ON
 std::shared_ptr<Command> createTestDebugCommand() {
     return std::make_shared<TestDebugCommand>();
 }
@@ -506,8 +601,9 @@ void CommandFactory::initialize() {
     registerCommand(createClearCommand());
     registerCommand(createSaveCommand());
     registerCommand(createListCommand());
-    registerCommand(createTestTUICommand());
 #ifdef REMOTE_DEBUG_ON
+    registerCommand(createFormDemoCommand());
+    registerCommand(createTestTUICommand());
     registerCommand(createTestDebugCommand());
     registerCommand(createReconnectDebugCommand());
     registerCommand(createTestCtrlCCommand());

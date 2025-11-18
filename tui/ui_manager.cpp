@@ -365,6 +365,25 @@ bool UIManager::isInitialized() const {
     return initialized_;
 }
 
+const std::vector<std::shared_ptr<InputField>>& UIManager::getInputFields() const {
+    return input_fields_;
+}
+
+InputField* UIManager::addInputField(const std::string& name, const std::string& label, int row, int col, int width,
+                                   InputType type, const std::string& default_value) {
+    /* create input field with label */
+    auto field = std::make_shared<InputField>(label, row, col, width, type, default_value);
+
+    /* store in vector */
+    input_fields_.push_back(field);
+
+    /* add to focus order */
+    focus_order_.push_back(field.get());
+
+    /* return raw pointer for immediate access */
+    return field.get();
+}
+
 void UIManager::clearComponents() {
     headers_.clear();
     input_fields_.clear();

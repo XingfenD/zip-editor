@@ -23,6 +23,9 @@ public:
     void listLocalFileHeaders() const;
     void listCentralDirectoryHeaders() const;
 
+    bool addLocalFileHeader();
+    bool addCentralDirectoryHeader();
+
     bool save(const std::string& output_path);
     /* ---- commands ---- */
 

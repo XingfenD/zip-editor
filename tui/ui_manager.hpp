@@ -168,6 +168,27 @@ public:
      */
     bool isInitialized() const;
 
+    /**
+     * get all input fields
+     * @return reference to input fields vector
+     */
+    const std::vector<std::shared_ptr<InputField>>& getInputFields() const;
+
+    /**
+     * add input field component with name (for form handling)
+     * @param name field name (for reference)
+     * @param label field label
+     * @param row row position
+     * @param col column position
+     * @param width field width
+     * @param type input type
+     * @param default_value default value
+     * @return pointer to the created input field
+     */
+    InputField* addInputField(const std::string& name, const std::string& label, int row, int col, int width,
+                             InputType type = InputType::STRING,
+                             const std::string& default_value = "");
+
 private:
     /**
      * focus a specific component
