@@ -1,14 +1,34 @@
 #include "input_field.hpp"
 #include <ncurses.h>
 
-InputField::InputField(const std::string& label, int row, int col, int width,
+InputField::InputField(const std::string& label, int row, int col, int capacity,
                        InputType type, const std::string& default_value)
     : label_(label),
       value_(default_value),
       default_value_(default_value),
       row_(row),
       col_(col),
-      width_(width),
+      capacity_(capacity),
+      display_width_(capacity + 1),
+      cursor_pos_(static_cast<int>(default_value.length())),
+      type_(type),
+      focused_(false) {
+    /* validate default value against capacity */
+    if (value_.length() > static_cast<size_t>(capacity_)) {
+        value_ = value_.substr(0, capacity_);
+        cursor_pos_ = capacity_;
+    }
+}
+
+InputField::InputField(const std::string& label, int row, int col, int capacity, int display_width,
+                       InputType type, const std::string& default_value)
+    : label_(label),
+      value_(default_value),
+      default_value_(default_value),
+      row_(row),
+      col_(col),
+      capacity_(capacity),
+      display_width_(display_width),
       cursor_pos_(static_cast<int>(default_value.length())),
       type_(type),
       focused_(false) {
@@ -31,8 +51,27 @@ void InputField::setPosition(int row, int col) {
     col_ = col;
 }
 
-void InputField::setWidth(int width) {
-    width_ = width;
+void InputField::setCapacity(int capacity) {
+    capacity_ = capacity;
+    /* truncate value if it exceeds new capacity */
+    if (value_.length() > static_cast<size_t>(capacity_)) {
+        value_ = value_.substr(0, capacity_);
+        if (cursor_pos_ > capacity_) {
+            cursor_pos_ = capacity_;
+        }
+    }
+}
+
+int InputField::getCapacity() const {
+    return capacity_;
+}
+
+void InputField::setDisplayWidth(int display_width) {
+    display_width_ = display_width;
+}
+
+int InputField::getDisplayWidth() const {
+    return display_width_;
 }
 
 void InputField::setInputType(InputType type) {
@@ -80,8 +119,8 @@ void InputField::setFocused(bool focused) {
         /* gain focus */
         /* position cursor - cursor visibility will be managed by UIManager */
         int display_start = 0;
-        if (cursor_pos_ >= width_) {
-            display_start = cursor_pos_ - width_ + 1;
+        if (cursor_pos_ >= display_width_) {
+            display_start = cursor_pos_ - display_width_ + 1;
         }
         int cursor_col = col_ + label_.length() + 2 + (cursor_pos_ - display_start);
         move(row_, cursor_col);
@@ -96,8 +135,8 @@ void InputField::getCursorPosition(int& row, int& col) const {
     /* calculate display parameters to determine cursor column */
     int field_start_col = col_ + label_.length() + 2;
     int display_start = 0;
-    if (cursor_pos_ >= width_) {
-        display_start = cursor_pos_ - width_ + 1;
+    if (cursor_pos_ >= display_width_) {
+        display_start = cursor_pos_ - display_width_ + 1;
     }
     
     col = field_start_col + (cursor_pos_ - display_start);
@@ -136,7 +175,7 @@ bool InputField::handleKey(int key) {
         default:
             /* check if it's a printable character */
             if (key >= 32 && key <= 126) {
-                if (isValidChar(static_cast<char>(key)) && value_.length() < static_cast<size_t>(width_)) {
+                if (isValidChar(static_cast<char>(key)) && value_.length() < static_cast<size_t>(capacity_)) {
                     insertChar(static_cast<char>(key));
                 }
             } else {
@@ -149,8 +188,8 @@ bool InputField::handleKey(int key) {
         draw();
         /* update cursor position */
         int display_start = 0;
-        if (cursor_pos_ >= width_) {
-            display_start = cursor_pos_ - width_ + 1;
+        if (cursor_pos_ >= display_width_) {
+            display_start = cursor_pos_ - display_width_ + 1;
         }
         int cursor_col = col_ + label_.length() + 2 + (cursor_pos_ - display_start);
         move(row_, cursor_col);
@@ -166,10 +205,10 @@ void InputField::draw() {
     /* calculate display parameters */
     int field_start_col = col_ + label_.length() + 2;
     int display_start = 0;
-    if (cursor_pos_ >= width_) {
-        display_start = cursor_pos_ - width_ + 1;
+    if (cursor_pos_ >= display_width_) {
+        display_start = cursor_pos_ - display_width_ + 1;
     }
-    std::string display_value = value_.substr(display_start, width_);
+    std::string display_value = value_.substr(display_start, display_width_);
 
     /* draw input field with border */
     if (focused_) {
@@ -178,7 +217,7 @@ void InputField::draw() {
     }
 
     /* draw background */
-    for (int i = 0; i < width_; ++i) {
+    for (int i = 0; i < display_width_; ++i) {
         mvaddch(row_, field_start_col + i, ' ');
     }
 
@@ -224,7 +263,7 @@ void InputField::moveCursorRight() {
 }
 
 void InputField::insertChar(char c) {
-    if (value_.length() < static_cast<size_t>(width_)) {
+    if (value_.length() < static_cast<size_t>(capacity_)) {
         value_.insert(cursor_pos_, 1, c);
         ++cursor_pos_;
     }

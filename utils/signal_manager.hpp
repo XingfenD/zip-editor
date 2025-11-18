@@ -54,11 +54,6 @@ private:
     /* get singleton instance */
     static SignalManager* getInstance();
 
-    /* static factory method for creating instances (used by make_unique) */
-    static SignalManager* createInstance() {
-        return new SignalManager();
-    }
-
     /* internal method to register signal handler */
     bool registerSignalHandlerInternal(int signal, SignalCallback callback);
 

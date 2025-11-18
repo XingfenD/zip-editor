@@ -48,16 +48,31 @@ public:
     Header* addHeader(const std::string& title, int row = 0, bool centered = true);
 
     /**
-     * add input field component
+     * add input field component with default display width (capacity + 1)
      * @param label field label
      * @param row row position
      * @param col column position
-     * @param width field width
+     * @param capacity maximum characters allowed
      * @param type input type
      * @param default_value default value
      * @return pointer to the created input field
      */
-    InputField* addInputField(const std::string& label, int row, int col, int width,
+    InputField* addInputField(const std::string& label, int row, int col, int capacity,
+                             InputType type = InputType::STRING,
+                             const std::string& default_value = "");
+    
+    /**
+     * add input field component with explicit display width
+     * @param label field label
+     * @param row row position
+     * @param col column position
+     * @param capacity maximum characters allowed
+     * @param display_width visible display width
+     * @param type input type
+     * @param default_value default value
+     * @return pointer to the created input field
+     */
+    InputField* addInputField(const std::string& label, int row, int col, int capacity, int display_width,
                              InputType type = InputType::STRING,
                              const std::string& default_value = "");
 
@@ -185,9 +200,11 @@ public:
      * @param default_value default value
      * @return pointer to the created input field
      */
-    InputField* addInputField(const std::string& name, const std::string& label, int row, int col, int width,
+    InputField* addInputField(const std::string& name, const std::string& label, int row, int col, int capacity,
                              InputType type = InputType::STRING,
                              const std::string& default_value = "");
+    InputField* addInputField(const std::string& name, const std::string& label, int row, int col, int capacity, int display_width,
+                              InputType type, const std::string& default_value);
 
 private:
     /**

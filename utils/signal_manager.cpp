@@ -28,7 +28,7 @@ SignalManager* SignalManager::getInstance() {
     std::lock_guard<std::mutex> lock(instance_mutex_);
 
     if (!instance_) {
-        instance_.reset(createInstance());
+        instance_.reset(new SignalManager());
     }
 
     return instance_.get();

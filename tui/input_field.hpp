@@ -20,7 +20,29 @@ public:
      * @param type input type (string or hex)
      * @param default_value default value
      */
-    InputField(const std::string& label, int row, int col, int width,
+    /**
+     * constructor with default display width (capacity + 1)
+     * @param label field label text
+     * @param row row position
+     * @param col column position
+     * @param capacity input field capacity (maximum characters allowed)
+     * @param type input type (string or hex)
+     * @param default_value default value
+     */
+    InputField(const std::string& label, int row, int col, int capacity,
+               InputType type = InputType::STRING, const std::string& default_value = "");
+    
+    /**
+     * constructor with explicit display width
+     * @param label field label text
+     * @param row row position
+     * @param col column position
+     * @param capacity input field capacity (maximum characters allowed)
+     * @param display_width visible display width
+     * @param type input type (string or hex)
+     * @param default_value default value
+     */
+    InputField(const std::string& label, int row, int col, int capacity, int display_width,
                InputType type = InputType::STRING, const std::string& default_value = "");
 
     virtual ~InputField();
@@ -45,10 +67,28 @@ public:
     void setPosition(int row, int col);
 
     /**
-     * set field width
-     * @param width new width
+     * set input capacity
+     * @param capacity new maximum characters allowed
      */
-    void setWidth(int width);
+    void setCapacity(int capacity);
+    
+    /**
+     * get input capacity
+     * @return maximum characters allowed
+     */
+    int getCapacity() const;
+    
+    /**
+     * set display width
+     * @param display_width new visible width
+     */
+    void setDisplayWidth(int display_width);
+    
+    /**
+     * get display width
+     * @return visible display width
+     */
+    int getDisplayWidth() const;
 
     /**
      * set input type
@@ -144,7 +184,8 @@ private:
     std::string default_value_;  /**< default value */
     int row_;                    /**< row position */
     int col_;                    /**< column position */
-    int width_;                  /**< field width */
+    int capacity_;               /**< maximum characters allowed (input capacity) */
+    int display_width_;          /**< visible display width */
     int cursor_pos_;             /**< cursor position within value */
     InputType type_;             /**< input type */
     bool focused_;               /**< focus state */

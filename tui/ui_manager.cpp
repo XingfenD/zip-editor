@@ -67,9 +67,25 @@ Header* UIManager::addHeader(const std::string& title, int row, bool centered) {
     return header.get();
 }
 
-InputField* UIManager::addInputField(const std::string& label, int row, int col, int width,
+InputField* UIManager::addInputField(const std::string& label, int row, int col, int capacity,
                                      InputType type, const std::string& default_value) {
-    auto input_field = std::make_shared<InputField>(label, row, col, width, type, default_value);
+    auto input_field = std::make_shared<InputField>(label, row, col, capacity, type, default_value);
+    input_fields_.push_back(input_field);
+
+    /* add to focus order */
+    focus_order_.push_back(input_field.get());
+
+    /* if this is the first focusable component, set focus to it */
+    if (current_focus_index_ == -1) {
+        setFocusIndex(0);
+    }
+
+    return input_field.get();
+}
+
+InputField* UIManager::addInputField(const std::string& label, int row, int col, int capacity, int display_width,
+                                     InputType type, const std::string& default_value) {
+    auto input_field = std::make_shared<InputField>(label, row, col, capacity, display_width, type, default_value);
     input_fields_.push_back(input_field);
 
     /* add to focus order */
@@ -369,10 +385,25 @@ const std::vector<std::shared_ptr<InputField>>& UIManager::getInputFields() cons
     return input_fields_;
 }
 
-InputField* UIManager::addInputField(const std::string& name, const std::string& label, int row, int col, int width,
+InputField* UIManager::addInputField(const std::string& name, const std::string& label, int row, int col, int capacity,
                                    InputType type, const std::string& default_value) {
     /* create input field with label */
-    auto field = std::make_shared<InputField>(label, row, col, width, type, default_value);
+    auto field = std::make_shared<InputField>(label, row, col, capacity, type, default_value);
+
+    /* store in vector */
+    input_fields_.push_back(field);
+
+    /* add to focus order */
+    focus_order_.push_back(field.get());
+
+    /* return raw pointer for immediate access */
+    return field.get();
+}
+
+InputField* UIManager::addInputField(const std::string& name, const std::string& label, int row, int col, int capacity, int display_width,
+                                   InputType type, const std::string& default_value) {
+    /* create input field with label */
+    auto field = std::make_shared<InputField>(label, row, col, capacity, display_width, type, default_value);
 
     /* store in vector */
     input_fields_.push_back(field);

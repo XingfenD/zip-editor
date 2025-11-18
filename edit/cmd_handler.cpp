@@ -292,9 +292,10 @@ public:
             std::cout << "Usage: add <lfh|cdh>" << std::endl;
         } else if (params.size() == 1){
             if (params[0] == "lfh") {
-                zip_handler.addLocalFileHeader();
+                /* show form to get local file header information */
+                FormResult form_result = FormFactory::getInstance().showForm("edit_lfh");
             } else if (params[0] == "cdh") {
-                zip_handler.addCentralDirectoryHeader();
+                // zip_handler.addCentralDirectoryHeader();
             } else {
                 std::cout << "Error: Invalid parameter for add command" << std::endl;
                 std::cout << "Usage: add <lfh|cdh>" << std::endl;
@@ -545,68 +546,22 @@ public:
 };
 #endif /* REMOTE_DEBUG_ON */
 
-/* specific command factory methods */
-std::shared_ptr<Command> createExitCommand() {
-    return std::make_shared<ExitCommand>();
-}
-
-std::shared_ptr<Command> createHelpCommand() {
-    return std::make_shared<HelpCommand>();
-}
-
-std::shared_ptr<Command> createPrintCommand() {
-    return std::make_shared<PrintCommand>();
-}
-
-std::shared_ptr<Command> createClearCommand() {
-    return std::make_shared<ClearCommand>();
-}
-
-std::shared_ptr<Command> createSaveCommand() {
-    return std::make_shared<SaveCommand>();
-}
-
-std::shared_ptr<Command> createListCommand() {
-    return std::make_shared<ListCommand>();
-}
-
-#ifdef REMOTE_DEBUG_ON
-std::shared_ptr<Command> createFormDemoCommand() {
-    return std::make_shared<FormDemoCommand>();
-}
-
-std::shared_ptr<Command> createTestTUICommand() {
-    return std::make_shared<TestTUICommand>();
-}
-
-std::shared_ptr<Command> createTestDebugCommand() {
-    return std::make_shared<TestDebugCommand>();
-}
-
-std::shared_ptr<Command> createReconnectDebugCommand() {
-    return std::make_shared<ReconnectDebugCommand>();
-}
-
-std::shared_ptr<Command> createTestCtrlCCommand() {
-    return std::make_shared<TestCtrlC>();
-}
-#endif /* REMOTE_DEBUG_ON */
-
 /* command factory implementation */
 void CommandFactory::initialize() {
     /* register all commands */
-    registerCommand(createExitCommand());
-    registerCommand(createHelpCommand());
-    registerCommand(createPrintCommand());
-    registerCommand(createClearCommand());
-    registerCommand(createSaveCommand());
-    registerCommand(createListCommand());
+    registerCommand(std::make_shared<ExitCommand>());
+    registerCommand(std::make_shared<HelpCommand>());
+    registerCommand(std::make_shared<PrintCommand>());
+    registerCommand(std::make_shared<ClearCommand>());
+    registerCommand(std::make_shared<SaveCommand>());
+    registerCommand(std::make_shared<ListCommand>());
+    registerCommand(std::make_shared<AddCommand>());
 #ifdef REMOTE_DEBUG_ON
-    registerCommand(createFormDemoCommand());
-    registerCommand(createTestTUICommand());
-    registerCommand(createTestDebugCommand());
-    registerCommand(createReconnectDebugCommand());
-    registerCommand(createTestCtrlCCommand());
+    registerCommand(std::make_shared<FormDemoCommand>());
+    registerCommand(std::make_shared<TestTUICommand>());
+    registerCommand(std::make_shared<TestDebugCommand>());
+    registerCommand(std::make_shared<ReconnectDebugCommand>());
+    registerCommand(std::make_shared<TestCtrlC>());
 #endif /* REMOTE_DEBUG_ON */
 
     /* register aliases */
