@@ -1,12 +1,25 @@
 #include "form_factory.hpp"
-#include "../utils/signal_manager.hpp"
+#include "signal_manager.hpp"
 #include <iostream>
 #include "debug_helper.hpp"
+#include "field_descriptor.hpp"
+#include "utils.hpp"
 
 /* get singleton instance */
 FormFactory& FormFactory::getInstance() {
     static FormFactory instance;
     return instance;
+}
+
+void inputFieldAdder(UIManager& ui, const std::vector<InputDescriptor>& input_descriptors, int base_row, int base_col) {
+    for (const auto& d: input_descriptors) {
+        int capacity = d.getField().getBytes() * 2;
+        if (capacity < 0) {
+            capacity = 30;
+        }
+        ui.addInputField(d.getField().getName(), d.getField().getTitle() + ":", base_row, base_col, capacity, fieldTypeToInputType(d.getField().getType()), d.getDefaultValue());
+        base_row += 2;
+    }
 }
 
 /* initialize all predefined forms */
@@ -51,67 +64,21 @@ void FormFactory::initializeForms() {
             return form_result;
         }
     );
-// private:
-//     uint32_t signature;
-//     uint16_t version_needed;
-//     uint16_t general_bit_flag;
-//     uint16_t compression_method;
-//     uint16_t last_mod_time;
-//     uint16_t last_mod_date;
-//     uint32_t crc32;
-//     uint32_t compressed_size;
-//     uint32_t uncompressed_size;
-//     uint16_t filename_length;
-//     uint16_t extra_field_length;
-//     std::string filename;
-//     std::unique_ptr<uint8_t[]> extra_field;
 
-//     /* the file data is not belong to local file header, but defined in LocalFileHeader for convenience */
-//     std::unique_ptr<uint8_t[]> file_data;
-// };
     registerForm("edit_lfh",
         [](UIManager& ui) {
             /* add header */
             ui.addHeader("Edit Local File Header");
 
-            /* add input fields */
-            ui.addInputField("signature", "Signature:", 5, 10, 8, InputType::HEX, "04034B50");
-            ui.addInputField("version_needed", "Version Needed:", 7, 10, 4, InputType::HEX, "000A");
-            ui.addInputField("general_bit_flag", "General Bit Flag:", 9, 10, 4, InputType::HEX, "0000");
-            ui.addInputField("compression_method", "Compression Method:", 11, 10, 4, InputType::HEX, "0000");
-            ui.addInputField("last_mod_time", "Last Mod Time:", 13, 10, 4, InputType::HEX, "5AF2");
-            ui.addInputField("last_mod_date", "Last Mod Date:", 15, 10, 4, InputType::HEX, "0000");
-            ui.addInputField("crc32", "CRC32:", 17, 10, 8, InputType::HEX, "00000000");
-            ui.addInputField("compressed_size", "Compressed Size:", 19, 10, 8, InputType::HEX, "00000004");
-            ui.addInputField("uncompressed_size", "Uncompressed Size:", 21, 10, 8, InputType::HEX, "00000004");
-            ui.addInputField("filename_length", "Filename Length:", 23, 10, 4, InputType::HEX, "0007");
-            ui.addInputField("extra_field_length", "Extra Field Length:", 25, 10, 4, InputType::HEX, "0000");
-            ui.addInputField("filename", "Filename:", 27, 10, 30, InputType::STRING, "newfile");
-            ui.addInputField("extra_field", "Extra Field:", 29, 10, 30, InputType::HEX);
-            ui.addInputField("file_data", "File Data:", 31, 10, 30, InputType::HEX, "00000000");
+            inputFieldAdder(ui, LOCAL_FILE_HEADER_INPUT_DESCRIPTORS, 5, 10);
 
             /* add buttons */
             ui.addConfirmButton();
             ui.addCancelButton();
         });
 
-
-
-
     initialized_ = true;
 }
-
-/* show a predefined form and return its result */
-/* helper structure to store input field creation information */
-struct InputFieldInfo {
-    std::string name;
-    std::string label;
-    int row;
-    int col;
-    int width;
-    InputType type;
-    std::string default_value;
-};
 
 FormResult FormFactory::showForm(const std::string& form_name) {
     /* call the overloaded method with empty custom defaults */
@@ -197,7 +164,7 @@ static FormResult defaultExtractor(UIManager& ui, UIResult result) {
     if (result == UIResult::CONFIRM) {
         /* extract all input field values using label as key */
         for (const auto& field : ui.getInputFields()) {
-            form_result.values[field->getLabel()] = field->getValue();
+            form_result.values[field->getName()] = field->getValue();
         }
     }
 

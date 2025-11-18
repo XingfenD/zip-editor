@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <memory>
 #include <fstream>
+#include "field_descriptor.hpp"
+#include "input_field.hpp"
 
 /* read specified size of data and convert it to little endian */
 template<typename T>
@@ -19,5 +21,7 @@ inline void writeLittleEndian(std::ofstream& file, T value) {
 }
 
 std::vector<std::string> splitString(const std::string& str, const std::string& delimiter);
+
+InputType fieldTypeToInputType(FieldType fieldType);
 
 #endif /* UTILS_HPP */

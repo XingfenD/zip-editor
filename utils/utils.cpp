@@ -19,3 +19,14 @@ std::vector<std::string> splitString(const std::string& str, const std::string& 
     tokens.push_back(str.substr(start));
     return tokens;
 }
+
+InputType fieldTypeToInputType(FieldType fieldType) {
+    switch (fieldType) {
+        case FieldType::STRING:
+            return InputType::STRING;
+        case FieldType::HEX:
+            return InputType::HEX;
+        default:
+            return InputType::STRING;
+    }
+}
