@@ -2,13 +2,13 @@
 
 # settings of compiler
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Wextra -I./utils -I./zip_seg -I./main -I./edit -I./tui -MMD -MP
+CXXFLAGS = -std=c++17 -Wall -Wextra -I./utils -I./zip_seg -I./main -I./edit -I./tui -I./tui/components -I./tui/forms -MMD -MP
 LDFLAGS = -lncurses
 
 # target name
 TARGET = zip_editor.out
 
-SRCS = main.cpp $(wildcard utils/*.cpp) $(wildcard zip_seg/*.cpp) $(wildcard main/*.cpp) $(wildcard edit/*.cpp) $(filter-out tui/tui_example.cpp, $(wildcard tui/*.cpp))
+SRCS = main.cpp $(wildcard utils/*.cpp) $(wildcard zip_seg/*.cpp) $(wildcard main/*.cpp) $(wildcard edit/*.cpp) $(filter-out tui/tui_example.cpp, $(wildcard tui/*.cpp)) $(wildcard tui/components/*.cpp) $(wildcard tui/forms/*.cpp)
 
 OBJS = $(SRCS:.cpp=.o)
 # dependency files
