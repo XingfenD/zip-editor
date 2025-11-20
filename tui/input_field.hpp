@@ -25,7 +25,7 @@ public:
      * @param label field label text
      * @param row row position
      * @param col column position
-     * @param capacity input field capacity (maximum characters allowed)
+     * @param capacity input field capacity (maximum characters allowed, -1 for variable length)
      * @param type input type (string or hex)
      * @param default_value default value
      */
@@ -38,7 +38,7 @@ public:
      * @param label field label text
      * @param row row position
      * @param col column position
-     * @param capacity input field capacity (maximum characters allowed)
+     * @param capacity input field capacity (maximum characters allowed, -1 for variable length)
      * @param display_width visible display width
      * @param type input type (string or hex)
      * @param default_value default value
@@ -76,9 +76,15 @@ public:
 
     /**
      * set input capacity
-     * @param capacity new maximum characters allowed
+     * @param capacity new maximum characters allowed (-1 for variable length)
      */
     void setCapacity(int capacity);
+
+    /**
+     * check if input field has variable length
+     * @return true if field has variable length
+     */
+    bool isVariableLength() const;
 
     /**
      * get input capacity
@@ -188,11 +194,12 @@ private:
     std::string value_;          /**< input value */
     int row_;                    /**< row position */
     int col_;                    /**< column position */
-    int capacity_;               /**< maximum characters allowed (input capacity) */
+    int capacity_;               /**< maximum characters allowed (input capacity), -1 for variable length */
     int display_width_;          /**< visible display width */
     int cursor_pos_;             /**< cursor position within value */
     InputType type_;             /**< input type */
     bool focused_;               /**< focus state */
+    bool isVariableLength_;      /**< flag indicating if field has variable length */
 };
 
 #endif /* INPUT_FIELD_HPP */

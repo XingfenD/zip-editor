@@ -9,10 +9,11 @@ InputField::InputField(const std::string& name, const std::string& label, int ro
       row_(row),
       col_(col),
       capacity_(capacity),
-      display_width_(capacity + 1),
+      display_width_(capacity > 0 ? capacity + 1 : 31), // 为可变长度设置默认显示宽度31
       cursor_pos_(static_cast<int>(default_value.length())),
       type_(type),
-      focused_(false) {
+      focused_(false),
+      isVariableLength_(capacity == -1) {
     /* validate default value against capacity */
     if (value_.length() > static_cast<size_t>(capacity_)) {
         value_ = value_.substr(0, capacity_);
@@ -31,7 +32,8 @@ InputField::InputField(const std::string& name, const std::string& label, int ro
       display_width_(display_width),
       cursor_pos_(static_cast<int>(default_value.length())),
       type_(type),
-      focused_(false) {
+      focused_(false),
+      isVariableLength_(capacity == -1) {
     /* validate default value against capacity */
     if (value_.length() > static_cast<size_t>(capacity_)) {
         value_ = value_.substr(0, capacity_);
@@ -60,13 +62,24 @@ void InputField::setPosition(int row, int col) {
 
 void InputField::setCapacity(int capacity) {
     capacity_ = capacity;
-    /* truncate value if it exceeds new capacity */
-    if (value_.length() > static_cast<size_t>(capacity_)) {
+    isVariableLength_ = (capacity == -1);
+
+    /* only truncate value if it's not variable length */
+    if (!isVariableLength_ && value_.length() > static_cast<size_t>(capacity_)) {
         value_ = value_.substr(0, capacity_);
         if (cursor_pos_ > capacity_) {
             cursor_pos_ = capacity_;
         }
     }
+
+    /* update display width if using default width */
+    if (capacity_ > 0) {
+        display_width_ = capacity_ + 1;
+    }
+}
+
+bool InputField::isVariableLength() const {
+    return isVariableLength_;
 }
 
 int InputField::getCapacity() const {
@@ -124,11 +137,17 @@ void InputField::setFocused(bool focused) {
         int cursor_col = col_ + label_.length() + 2 + (cursor_pos_ - display_start);
         move(row_, cursor_col);
     } else if (!focused && focused_ && type_ == InputType::HEX) {
-        /* lose focus - pad hex input with leading zeros if needed */
-        if (!value_.empty()) {
-            /* pad with leading zeros to make length even */
+        if (capacity_ > 0) {
+            /* lose focus - pad hex input with leading zeros if needed for fixed length */
+            /* pad with leading zeros to make length even, even if value is empty */
             if (value_.length() < static_cast<size_t>(capacity_)) {
                 value_ = std::string(capacity_ - value_.length(), '0') + value_;
+                cursor_pos_ = static_cast<int>(value_.length());
+            }
+        } else if (isVariableLength_) {
+            /* for variable length hex fields, pad with leading zero if length is odd */
+            if (!value_.empty() && value_.length() % 2 != 0) {
+                value_ = "0" + value_;
                 cursor_pos_ = static_cast<int>(value_.length());
             }
         }
@@ -183,7 +202,7 @@ bool InputField::handleKey(int key) {
         default:
             /* check if it's a printable character */
             if (key >= 32 && key <= 126) {
-                if (isValidChar(static_cast<char>(key)) && value_.length() < static_cast<size_t>(capacity_)) {
+                if (isValidChar(static_cast<char>(key)) && (isVariableLength_ || value_.length() < static_cast<size_t>(capacity_))) {
                     insertChar(static_cast<char>(key));
                 }
             } else {
@@ -271,7 +290,7 @@ void InputField::moveCursorRight() {
 }
 
 void InputField::insertChar(char c) {
-    if (value_.length() < static_cast<size_t>(capacity_)) {
+    if (isVariableLength_ || value_.length() < static_cast<size_t>(capacity_)) {
         value_.insert(cursor_pos_, 1, c);
         ++cursor_pos_;
     }

@@ -100,7 +100,6 @@ public:
     ExitCommand() : Command("exit") {}
 
     bool execute(ZipHandler& zip_handler, const std::vector<std::string>& params) override {
-        DEBUG_LOG("Exit command executed\n");
         return false; /* return false to indicate program should exit */
     }
 

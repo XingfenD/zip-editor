@@ -4,7 +4,6 @@
 #include <string>
 #include <cctype>
 #include <vector>
-#include <map>
 
 enum class FieldType {
     STRING = 0,

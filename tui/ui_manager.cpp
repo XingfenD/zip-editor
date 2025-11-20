@@ -326,7 +326,7 @@ UIResult UIManager::run() {
     /* main loop */
     while (result == UIResult::NONE) {
         int key = getch();
-        DEBUG_LOG_FMT("key pressed: %d", key);
+        // DEBUG_LOG_FMT("key pressed: %d", key);
         result = handleKey(key);
 
         /* redraw after each key press */
