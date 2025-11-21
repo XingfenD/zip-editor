@@ -9,11 +9,6 @@
 #include <vector>
 #include <memory>
 
-/* forward declarations */
-class Header;
-class InputField;
-class Button;
-
 /* UI result type */
 enum class UIResult {
     NONE,

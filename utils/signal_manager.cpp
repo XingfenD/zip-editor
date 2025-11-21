@@ -46,7 +46,7 @@ SignalManager::SignalHandler SignalManager::getCurrentSignalHandler(int signal) 
 
 /* initialize the signal manager */
 void SignalManager::initialize() {
-    getInstance(); // Simply getting the instance will initialize it
+    getInstance();
 }
 
 /* shutdown the signal manager */
@@ -118,17 +118,17 @@ bool SignalManager::unregisterSignalHandlerInternal(int signal) {
         return false;
     }
 
-    // Pop the last handler from the stack
+    /* pop the last handler from the stack */
     HandlerStackEntry entry = it->second.back();
     it->second.pop_back();
 
-    // If the stack is now empty, restore the original handler
+    /* if the stack is now empty, restore the original handler */
     if (it->second.empty()) {
         handler_stacks_.erase(it);
         std::signal(signal, original_handlers_[signal]);
         original_handlers_.erase(signal);
     } else {
-        // Otherwise, restore the previous handler in the stack
+        /* otherwise, restore the previous handler in the stack */
         std::signal(signal, it->second.back().previous_handler);
     }
 

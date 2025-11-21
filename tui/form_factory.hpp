@@ -7,10 +7,21 @@
 #include <functional>
 #include <memory>
 
-/* form result structure to store form values */
+/* forward declarations */
+class FormInterface;
+class ConfirmationForm;
+class EditLfhForm;
+
+/* form result structure */
 struct FormResult {
-    UIResult result_type;  /* confirm, cancel, etc. */
-    std::map<std::string, std::string> values;  /* field name -> value mapping */
+    UIResult result_type;
+    std::map<std::string, std::string> values;
+};
+
+/* form context for passing custom parameters */
+struct FormContext {
+    std::string message;
+    std::map<std::string, std::string> custom_defaults;
 };
 
 /* form factory class for predefined forms */
@@ -19,8 +30,8 @@ public:
     /* singleton instance */
     static FormFactory& getInstance();
 
-    /* initialize all predefined forms */
-    void initializeForms();
+    /* initialize form factory - registers all form classes */
+    void initialize();
 
     /* show a predefined form and return its result */
     FormResult showForm(const std::string& form_name);
@@ -28,26 +39,20 @@ public:
     /* show a predefined form with custom default values and return its result */
     FormResult showForm(const std::string& form_name, const std::map<std::string, std::string>& custom_defaults);
 
+    /* show a form with custom context and return its result */
+    FormResult showForm(const std::string& form_name, const FormContext& context);
+
     /* register a new form template */
-    void registerForm(const std::string& name, std::function<void(UIManager&)> form_builder);
-    void registerForm(const std::string& name,
-                      std::function<void(UIManager&)> form_builder,
-                      std::function<FormResult(UIManager&, UIResult)> result_extractor);
+    void registerForm(const std::string& name, std::unique_ptr<FormInterface> form_interface = nullptr);
 
 private:
     FormFactory() = default;
     ~FormFactory() = default;
 
-    /* form template structure */
-    struct FormTemplate {
-        std::function<void(UIManager&)> builder;  /* function to build the form */
-        std::function<FormResult(UIManager&, UIResult)> extractor;  /* function to extract results */
-    };
-
     /* registered form templates */
-    std::map<std::string, FormTemplate> form_templates_;
+    std::map<std::string, std::unique_ptr<FormInterface>> form_mapping_;
 
-    /* whether forms have been initialized */
+    /* whether factory has been initialized */
     bool initialized_ = false;
 };
 

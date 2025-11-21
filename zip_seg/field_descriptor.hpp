@@ -62,19 +62,15 @@ public:
     const FieldDescriptor& getField() const { return field; }
     const std::string& getDefaultValue() const { return defaultValue; }
 
-
-
 private:
     FieldDescriptor field;
     std::string defaultValue;
 };
 
-// 首先定义RelatedFieldPair结构体
 struct RelatedFieldPair {
     const FieldDescriptor& key;
     const FieldDescriptor& value;
 
-    // 可选：添加构造函数方便初始化
     RelatedFieldPair(const FieldDescriptor& k, const FieldDescriptor& v)
         : key(k), value(v) {}
 };

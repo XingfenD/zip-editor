@@ -9,7 +9,7 @@ InputField::InputField(const std::string& name, const std::string& label, int ro
       row_(row),
       col_(col),
       capacity_(capacity),
-      display_width_(capacity > 0 ? capacity + 1 : 31), // 为可变长度设置默认显示宽度31
+      display_width_(capacity > 0 ? capacity + 1 : 31),
       cursor_pos_(static_cast<int>(default_value.length())),
       type_(type),
       focused_(false),
