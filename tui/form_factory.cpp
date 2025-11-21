@@ -57,7 +57,6 @@ void FormFactory::initialize() {
 
     /* create form instances and register with FormInterface pointers */
     registerForm("confirmation", std::make_unique<ConfirmationForm>());
-
     registerForm("edit_lfh", std::make_unique<EditLfhForm>());
 
     initialized_ = true;

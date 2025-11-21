@@ -9,10 +9,3 @@ void ConfirmationForm::build(UIManager& ui) {
     ui.addConfirmButton("Yes");
     ui.addCancelButton("No");
 }
-
-/* extract form result */
-FormResult ConfirmationForm::extractResult(UIManager&, UIResult result) {
-    FormResult form_result;
-    form_result.result_type = result;
-    return form_result;
-}
