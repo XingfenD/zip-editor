@@ -6,43 +6,9 @@
 #include <map>
 #include <memory>
 #include "zip_handler.hpp"
+#include "command.hpp"
 
 /* command interface for the command pattern */
-class Command {
-public:
-    Command(const std::string& name) : name(name) {}
-    virtual ~Command() = default;
-    virtual bool execute(ZipHandler& zip_handler, const std::vector<std::string>& params) = 0;
-    virtual std::string getName() const { return name; }
-    virtual std::vector<std::string> getAliases() const { return {}; }
-    virtual std::string getDescription() const { return ""; }
-    virtual std::string buildHelp() const {
-        std::string ret;
-        /* command name left-aligned, fixed width 15 characters */
-        ret += getName();
-        if (getName().length() < 15) {
-            ret.append(15 - getName().length(), ' ');
-        }
-        ret += "- ";
-        ret += getDescription();
-        /* add alias information if any */
-        const auto& aliases = getAliases();
-        if (!aliases.empty()) {
-            ret += " (aliases: ";
-            for (size_t i = 0; i < aliases.size(); ++i) {
-                ret += aliases[i];
-                if (i < aliases.size() - 1) {
-                    ret += ", ";
-                }
-            }
-            ret += ")";
-        }
-        return ret;
-    }
-
-private:
-    std::string name;
-};
 
 /* command factory class to create and manage commands */
 class CommandFactory {

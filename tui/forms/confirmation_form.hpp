@@ -14,9 +14,6 @@ public:
 
     /* build the form UI */
     void build(UIManager& ui) override;
-
-    /* extract form result */
-    FormResult extractResult(UIManager& ui, UIResult result) override;
 private:
     /* default confirmation message */
     static constexpr const char* DEFAULT_MESSAGE = "Are you sure you want to proceed?";
