@@ -10,7 +10,8 @@ UIManager::UIManager()
       current_focus_index_(-1),
       confirm_button_(nullptr),
       cancel_button_(nullptr),
-      reject_button_(nullptr) {
+      reject_button_(nullptr),
+      auto_arrange_buttons_(true) {
 }
 
 UIManager::~UIManager() {
@@ -30,22 +31,33 @@ bool UIManager::initialize() {
     if (!stdscr) {
         return false;
     }
-
-    /* configure ncurses settings */
-    keypad(stdscr, TRUE);    /* enable special keys */
-    cbreak();                /* disable line buffering */
-    noecho();                /* disable echoing */
-    curs_set(0);             /* hide cursor */
-    mousemask(ALL_MOUSE_EVENTS, NULL); /* enable mouse events */
-
+    cbreak();
+    noecho();
+    keypad(stdscr, TRUE);
     /* initialize colors if supported */
     if (has_colors()) {
         start_color();
-        init_pair(1, COLOR_WHITE, COLOR_BLACK); /* default color pair */
+        init_pair(1, COLOR_BLACK, COLOR_WHITE); // 选中状态
+        init_pair(2, COLOR_RED, COLOR_BLACK);   // 错误状态
+        init_pair(3, COLOR_GREEN, COLOR_BLACK); // 成功状态
+        init_pair(4, COLOR_WHITE, COLOR_BLACK); /* default color pair */
     }
+    curs_set(0);             /* hide cursor */
+    mousemask(ALL_MOUSE_EVENTS, NULL); /* enable mouse events */
 
     initialized_ = true;
     return true;
+}
+
+void UIManager::clearComponents() {
+    headers_.clear();
+    input_fields_.clear();
+    buttons_.clear();
+    focus_order_.clear();
+    current_focus_index_ = -1;
+    confirm_button_ = nullptr;
+    cancel_button_ = nullptr;
+    reject_button_ = nullptr;
 }
 
 void UIManager::shutdown() {
@@ -60,11 +72,12 @@ void UIManager::shutdown() {
     }
 }
 
-Header* UIManager::addHeader(const std::string& title, int row, bool centered) {
-    auto header = std::make_shared<Header>(title);
+Header* UIManager::addHeader(const std::string& text, int col, int row) {
+    auto header = std::make_shared<Header>(text);
     header->setPosition(row);
-    header->setCentered(centered);
+
     headers_.push_back(header);
+
     return header.get();
 }
 
@@ -84,24 +97,30 @@ InputField* UIManager::addInputField(const std::string& name, const std::string&
     return input_field.get();
 }
 
-InputField* UIManager::addInputField(const std::string& name, const std::string& label, int row, int col, int capacity, int display_width,
-                                     InputType type, const std::string& default_value) {
-    auto input_field = std::make_shared<InputField>(name, label, row, col, capacity, display_width, type, default_value);
-    input_fields_.push_back(input_field);
+InputField* UIManager::addInputField(const std::string& label, const std::string& value, int row, int col) {
+    // 使用label作为name，设置默认capacity为-1（可变长度）
+    auto field = std::make_shared<InputField>(label, label, row, col, -1, InputType::STRING, value);
 
-    /* add to focus order */
-    focus_order_.push_back(input_field.get());
+    input_fields_.push_back(field);
+    focus_order_.push_back(field.get());
 
     /* if this is the first focusable component, set focus to it */
     if (current_focus_index_ == -1) {
         setFocusIndex(0);
     }
 
-    return input_field.get();
+    return field.get();
 }
 
+// 已保留上面的7参数版本addInputField方法
+
 Button* UIManager::addButton(const std::string& text, int row, int col, ButtonType type) {
-    auto button = std::make_shared<Button>(text, row, col, type);
+    /* when auto arrangement is enabled, we'll set row to -1 to indicate that
+       position will be determined later */
+    int actual_row = auto_arrange_buttons_ ? -1 : row;
+    int actual_col = auto_arrange_buttons_ ? -1 : col;
+
+    auto button = std::make_shared<Button>(text, actual_row, actual_col, type);
     buttons_.push_back(button);
 
     /* add to focus order */
@@ -125,7 +144,12 @@ Button* UIManager::addButton(const std::string& text, int row, int col, ButtonTy
 }
 
 Button* UIManager::addConfirmButton(const std::string& text, int row, int col) {
-    /* if row or col is -1, calculate default position */
+    /* when auto arrangement is enabled, we ignore the position parameters */
+    if (auto_arrange_buttons_) {
+        return addButton(text, -1, -1, ButtonType::CONFIRM);
+    }
+
+    /* if auto arrangement is disabled, use original position calculation */
     if (row == -1 || col == -1) {
         int screen_rows, screen_cols;
         getScreenSize(screen_rows, screen_cols);
@@ -145,7 +169,12 @@ Button* UIManager::addConfirmButton(const std::string& text, int row, int col) {
 }
 
 Button* UIManager::addCancelButton(const std::string& text, int row, int col) {
-    /* if row or col is -1, calculate default position */
+    /* when auto arrangement is enabled, we ignore the position parameters */
+    if (auto_arrange_buttons_) {
+        return addButton(text, -1, -1, ButtonType::CANCEL);
+    }
+
+    /* if auto arrangement is disabled, use original position calculation */
     if (row == -1 || col == -1) {
         int screen_rows, screen_cols;
         getScreenSize(screen_rows, screen_cols);
@@ -165,7 +194,12 @@ Button* UIManager::addCancelButton(const std::string& text, int row, int col) {
 }
 
 Button* UIManager::addRejectButton(const std::string& text, int row, int col) {
-    /* if row or col is -1, calculate default position */
+    /* when auto arrangement is enabled, we ignore the position parameters */
+    if (auto_arrange_buttons_) {
+        return addButton(text, -1, -1, ButtonType::REJECT);
+    }
+
+    /* if auto arrangement is disabled, use original position calculation */
     if (row == -1 || col == -1) {
         int screen_rows, screen_cols;
         getScreenSize(screen_rows, screen_cols);
@@ -285,6 +319,11 @@ void UIManager::setFocusIndex(int index) {
 
 void UIManager::drawAll() {
     clearScreen();
+
+    /* if auto arrangement is enabled, arrange buttons before drawing */
+    if (auto_arrange_buttons_ && !buttons_.empty()) {
+        arrangeButtons();
+    }
 
     /* draw headers */
     for (const auto& header : headers_) {
@@ -408,17 +447,6 @@ const std::vector<std::shared_ptr<InputField>>& UIManager::getInputFields() cons
     return input_fields_;
 }
 
-void UIManager::clearComponents() {
-    headers_.clear();
-    input_fields_.clear();
-    buttons_.clear();
-    focus_order_.clear();
-    current_focus_index_ = -1;
-    confirm_button_ = nullptr;
-    cancel_button_ = nullptr;
-    reject_button_ = nullptr;
-}
-
 UIResult UIManager::handleKey(int key) {
     /* handle navigation keys */
     switch (key) {
@@ -463,4 +491,43 @@ UIResult UIManager::handleKey(int key) {
     }
 
     return UIResult::NONE;
+}
+
+void UIManager::setAutoArrangeButtons(bool enabled) {
+    auto_arrange_buttons_ = enabled;
+}
+
+void UIManager::arrangeButtons() {
+    if (buttons_.empty()) {
+        return;
+    }
+
+    int screen_rows, screen_cols;
+    getScreenSize(screen_rows, screen_cols);
+
+    /* calculate total width needed for all buttons with spacing */
+    int total_width = 0;
+    const int button_spacing = 4; /* space between buttons */
+
+    for (const auto& button : buttons_) {
+        total_width += button->getWidth() + button_spacing;
+    }
+
+    /* adjust for extra spacing at the end */
+    total_width -= button_spacing;
+
+    /* calculate starting column to center all buttons */
+    int start_col = (screen_cols - total_width) / 2;
+    if (start_col < 2) {
+        start_col = 2; /* minimum margin */
+    }
+
+    /* set button positions in a row at the bottom of the screen */
+    int current_col = start_col;
+    int button_row = screen_rows - 4; /* position above the bottom border */
+
+    for (const auto& button : buttons_) {
+        button->setPosition(button_row, current_col);
+        current_col += button->getWidth() + button_spacing;
+    }
 }

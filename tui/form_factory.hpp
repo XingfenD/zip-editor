@@ -22,6 +22,9 @@ struct FormResult {
 struct FormContext {
     std::string message;
     std::map<std::string, std::string> custom_defaults;
+
+    FormContext() = default;
+    FormContext(const std::string& message) : message(message) {}
 };
 
 /* form factory class for predefined forms */
