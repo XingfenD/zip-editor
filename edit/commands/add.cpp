@@ -1,6 +1,7 @@
 #include "command.hpp"
 #include <iostream>
 #include "form_factory.hpp"
+#include "defs.hpp"
 
 class AddCommand : public Command {
 public:
@@ -15,6 +16,11 @@ public:
                 /* show form to get local file header information */
                 FormResult form_result = FormFactory::getInstance().showForm("edit_lfh");
                 if (form_result.result_type == UIResult::CONFIRM) {
+                    if (form_result.values[LFH_LENGTH_UNMATCH_KEY] == "true") {
+                        FormContext context;
+                        context.message = "Local File Header length does not match the expected value. Do you want to continue?";
+                        FormResult confirm_result = FormFactory::getInstance().showForm("confirmation", context);
+                    }
                 }
             } else if (params[0] == "cdh") {
                 // zip_handler.addCentralDirectoryHeader();

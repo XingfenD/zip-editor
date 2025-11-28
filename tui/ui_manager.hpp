@@ -14,6 +14,7 @@ enum class UIResult {
     NONE,
     CONFIRM,
     CANCEL,
+    REJECT,
     ESC
 };
 
@@ -102,6 +103,15 @@ public:
      * @return pointer to the created button
      */
     Button* addCancelButton(const std::string& text = "Cancel", int row = -1, int col = -1);
+
+    /**
+     * add reject button (convenience method)
+     * @param text button text (default: "Reject")
+     * @param row row position
+     * @param col column position
+     * @return pointer to the created button
+     */
+    Button* addRejectButton(const std::string& text = "Reject", int row = -1, int col = -1);
 
     /**
      * set focus to the next focusable component
@@ -203,6 +213,7 @@ private:
     int current_focus_index_;                                     /**< current focused component index */
     Button* confirm_button_;                                      /**< pointer to confirm button */
     Button* cancel_button_;                                       /**< pointer to cancel button */
+    Button* reject_button_;                                       /**< pointer to reject button */
 };
 
 #endif /* UI_MANAGER_HPP */

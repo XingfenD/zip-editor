@@ -9,7 +9,8 @@ UIManager::UIManager()
     : initialized_(false),
       current_focus_index_(-1),
       confirm_button_(nullptr),
-      cancel_button_(nullptr) {
+      cancel_button_(nullptr),
+      reject_button_(nullptr) {
 }
 
 UIManager::~UIManager() {
@@ -106,11 +107,13 @@ Button* UIManager::addButton(const std::string& text, int row, int col, ButtonTy
     /* add to focus order */
     focus_order_.push_back(button.get());
 
-    /* update confirm/cancel button pointers */
+    /* update confirm/cancel/reject button pointers */
     if (type == ButtonType::CONFIRM) {
         confirm_button_ = button.get();
     } else if (type == ButtonType::CANCEL) {
         cancel_button_ = button.get();
+    } else if (type == ButtonType::REJECT) {
+        reject_button_ = button.get();
     }
 
     /* if this is the first focusable component, set focus to it */
@@ -159,6 +162,26 @@ Button* UIManager::addCancelButton(const std::string& text, int row, int col) {
     }
 
     return addButton(text, row, col, ButtonType::CANCEL);
+}
+
+Button* UIManager::addRejectButton(const std::string& text, int row, int col) {
+    /* if row or col is -1, calculate default position */
+    if (row == -1 || col == -1) {
+        int screen_rows, screen_cols;
+        getScreenSize(screen_rows, screen_cols);
+
+        if (row == -1) {
+            /* position buttons at the bottom of the screen */
+            row = screen_rows - 3;
+        }
+
+        if (col == -1) {
+            /* position in the middle, but shifted left more than confirm */
+            col = (screen_cols - text.length() - 4) / 2 - 20;
+        }
+    }
+
+    return addButton(text, row, col, ButtonType::REJECT);
 }
 
 void UIManager::focusNext() {
@@ -393,6 +416,7 @@ void UIManager::clearComponents() {
     current_focus_index_ = -1;
     confirm_button_ = nullptr;
     cancel_button_ = nullptr;
+    reject_button_ = nullptr;
 }
 
 UIResult UIManager::handleKey(int key) {
@@ -429,6 +453,8 @@ UIResult UIManager::handleKey(int key) {
                         return UIResult::CONFIRM;
                     } else if (button.get() == cancel_button_ || button->getType() == ButtonType::CANCEL) {
                         return UIResult::CANCEL;
+                    } else if (button.get() == reject_button_ || button->getType() == ButtonType::REJECT) {
+                        return UIResult::REJECT;
                     }
                 }
                 return UIResult::NONE;

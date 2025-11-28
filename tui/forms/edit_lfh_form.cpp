@@ -4,6 +4,7 @@
 #include "debug_helper.hpp"
 #include "field_descriptor.hpp"
 #include "utils.hpp"
+#include "defs.hpp"
 
 void EditLfhForm::addInputFields(UIManager& ui) {
     int base_row = 5;

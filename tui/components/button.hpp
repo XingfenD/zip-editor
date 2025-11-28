@@ -7,6 +7,7 @@
 enum class ButtonType {
     CONFIRM,  /**< confirm button */
     CANCEL,   /**< cancel button */
+    REJECT,   /**< reject button */
     CUSTOM    /**< custom button */
 };
 

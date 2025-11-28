@@ -113,6 +113,4 @@ static const std::vector<RelatedFieldPair> LOCAL_FILE_HEADER_RELATED_FIELDS = {
     RelatedFieldPair(EXTRA_FIELD_LENGTH, EXTRA_FIELD)
 };
 
-static const std::string LFH_LENGTH_UNMATCH_KEY("lfh_length_unmatch");
-
 #endif /* FIELD_DESCRIPTOR_HPP */
